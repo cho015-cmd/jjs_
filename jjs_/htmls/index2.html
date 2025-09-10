@@ -12,11 +12,15 @@
             background-color: #1a202c; /* Tailwind's gray-900 */
         }
         .player-card {
-            cursor: grab;
+            cursor: pointer; /* 클릭 가능한 커서로 변경 */
             user-select: none;
+            transition: all 0.2s ease-in-out;
         }
-        .player-card:active {
-            cursor: grabbing;
+        .player-card.selected {
+            outline: 3px solid #63b3ed; /* 선택된 카드 강조 */
+            outline-offset: 2px;
+            box-shadow: 0 0 15px #63b3ed; /* 선택 효과 */
+            transform: scale(1.05);
         }
         .message-box {
             position: fixed;
@@ -43,10 +47,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: border-color 0.2s ease-in-out;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
         }
         .formation-slot.active {
             border-color: #fff;
+            box-shadow: 0 0 10px #fff;
         }
     </style>
 </head>
@@ -54,7 +60,7 @@
 
     <div class="text-center mb-8">
         <h1 class="text-4xl font-bold mb-2">나만의 축구 팀 구성하기</h1>
-        <p class="text-lg text-gray-400">선수들을 드래그해서 경기장에 배치해보세요!</p>
+        <p class="text-lg text-gray-400">선수들을 클릭해서 경기장에 배치해보세요!</p>
     </div>
 
     <!-- 메시지 박스 -->
@@ -254,10 +260,10 @@
         const messageBox = document.getElementById('message-box');
         const regenerateButton = document.getElementById('regenerate-button');
         
-        let draggedItem = null;
-        let playerSlots = [];
+        // 클릭으로 선택된 선수를 추적하는 변수
+        let selectedPlayer = null;
 
-        // Function to show a message box
+        // 메시지 박스 표시 함수
         function showMessage(msg) {
             messageBox.textContent = msg;
             messageBox.classList.add('show');
@@ -266,7 +272,7 @@
             }, 1500);
         }
 
-        // Function to select players by specific counts for each position
+        // 특정 포지션별로 선수들을 선택하는 함수
         function getPlayersByPosition(playerList, counts) {
             const playersByPosition = {
                 '공격수': [],
@@ -275,7 +281,7 @@
                 '골키퍼': []
             };
 
-            // Categorize all players by position
+            // 모든 선수를 포지션별로 분류
             playerList.forEach(player => {
                 if (playersByPosition[player.position]) {
                     playersByPosition[player.position].push(player);
@@ -286,14 +292,14 @@
             for (const position in counts) {
                 const count = counts[position];
                 const availablePlayers = playersByPosition[position];
-                // Shuffle players for randomness
+                // 무작위로 선수들을 섞음
                 availablePlayers.sort(() => 0.5 - Math.random());
                 selectedPlayers.push(...availablePlayers.slice(0, count));
             }
             return selectedPlayers;
         }
 
-        // Function to generate field slots based on the chosen formation
+        // 선택된 포메이션에 따라 경기장 슬롯을 생성하는 함수
         function generateFieldSlots(formation) {
             formationField.innerHTML = '';
             formationNameDisplay.textContent = formation.name;
@@ -306,26 +312,23 @@
                     const slot = document.createElement('div');
                     slot.classList.add('formation-slot');
                     slot.setAttribute('data-position', row.position);
+                    slot.addEventListener('click', handleSlotClick); // 슬롯에 클릭 이벤트 리스너 추가
                     rowDiv.appendChild(slot);
                 }
                 formationField.appendChild(rowDiv);
             });
-
-            // Update playerSlots array and drop zone listeners
-            playerSlots = document.querySelectorAll('.formation-slot');
-            setupDropZones();
         }
 
-        // Function to dynamically create player cards
+        // 선수 카드를 동적으로 생성하는 함수
         function createPlayerCards() {
-            // Clear the field and player list
+            // 필드와 선수 목록 초기화
             playerListContainer.innerHTML = '';
             
-            // Randomly select a formation and generate slots
+            // 무작위 포메이션 선택 및 슬롯 생성
             const randomFormation = formations[Math.floor(Math.random() * formations.length)];
             generateFieldSlots(randomFormation);
 
-            // Define the number of players for each position
+            // 포지션별로 필요한 선수 수 정의
             const playerCounts = {
                 '공격수': 6,
                 '미드필더': 6,
@@ -335,13 +338,13 @@
             
             const players = getPlayersByPosition(allPlayers, playerCounts);
 
-            // Group players by position for display
+            // 선수들을 포지션별로 그룹화
             const playersByPosition = players.reduce((acc, player) => {
                 (acc[player.position] = acc[player.position] || []).push(player);
                 return acc;
             }, {});
 
-            // Create sections for each position
+            // 각 포지션별 섹션 생성
             const positionsInOrder = ['공격수', '미드필더', '수비수', '골키퍼'];
             positionsInOrder.forEach(position => {
                 if (playersByPosition[position]) {
@@ -356,137 +359,88 @@
                     playersByPosition[position].forEach(player => {
                         const card = document.createElement('div');
                         card.id = player.id;
-                        card.draggable = true;
-                        card.classList.add('player-card', 'bg-gray-700', 'p-4', 'rounded-lg', 'text-center', 'shadow-md', 'transition-transform', 'duration-200', 'hover:scale-105');
+                        card.classList.add('player-card', 'bg-gray-700', 'p-4', 'rounded-lg', 'text-center', 'shadow-md');
                         card.setAttribute('data-position', player.position);
                         card.innerHTML = `
                             <img src="${player.img}" alt="${player.name}" class="w-16 h-16 rounded-full mx-auto mb-2">
                             <div class="font-bold text-sm">${player.name}</div>
                             <div class="text-xs text-gray-400">${player.position}</div>
                         `;
-                        card.addEventListener('dragstart', dragStart);
-                        card.addEventListener('dragend', dragEnd);
+                        card.addEventListener('click', handlePlayerClick); // 선수 카드에 클릭 이벤트 리스너 추가
                         gridElement.appendChild(card);
                     });
                     
                     playerListContainer.appendChild(section);
                 }
             });
+
+            // 플레이어 선택 상태 초기화
+            selectedPlayer = null;
         }
 
-        // Drag start event
-        function dragStart(event) {
-            draggedItem = event.target.closest('.player-card');
-            if (draggedItem) {
-                event.dataTransfer.setData('text/plain', draggedItem.getAttribute('data-position'));
-                event.dataTransfer.setDragImage(draggedItem, 0, 0);
-
-                setTimeout(() => {
-                    draggedItem.style.opacity = '0.5';
-                }, 0);
-            }
-        }
-
-        // Drag end event
-        function dragEnd() {
-            if (draggedItem) {
-                draggedItem.style.opacity = '1';
-                draggedItem = null;
-            }
-        }
-
-        // Setup drop zone event listeners
-        function setupDropZones() {
-            const dropZones = [playerListContainer, ...playerSlots];
-
-            dropZones.forEach(zone => {
-                zone.addEventListener('dragover', dragOver);
-                zone.addEventListener('dragenter', dragEnter);
-                zone.addEventListener('dragleave', dragLeave);
-                zone.addEventListener('drop', dragDrop);
-            });
-        }
-
-        function dragOver(event) {
-            event.preventDefault();
-        }
-
-        function dragEnter(event) {
-            event.preventDefault();
-            const zone = event.currentTarget;
-            zone.classList.add('active');
-        }
-
-        function dragLeave(event) {
-            const zone = event.currentTarget;
-            zone.classList.remove('active');
-        }
-
-        function dragDrop(event) {
-            event.preventDefault();
-            const droppedZone = event.currentTarget;
-            droppedZone.classList.remove('active');
+        // 선수 카드를 클릭했을 때의 이벤트 핸들러
+        function handlePlayerClick(event) {
+            const clickedCard = event.currentTarget;
             
-            if (!draggedItem) return;
+            // 이전에 선택된 플레이어가 있다면 선택 해제
+            if (selectedPlayer) {
+                selectedPlayer.classList.remove('selected');
+            }
 
-            const isPlayerListZone = droppedZone.id === 'player-list-container';
-            const isFieldSlot = droppedZone.classList.contains('formation-slot');
+            // 클릭한 카드가 이미 선택된 상태라면 선택 해제만 하고 함수 종료
+            if (selectedPlayer && selectedPlayer.isSameNode(clickedCard)) {
+                selectedPlayer = null;
+                return;
+            }
+
+            // 새 플레이어 선택
+            selectedPlayer = clickedCard;
+            selectedPlayer.classList.add('selected');
+        }
+
+        // 경기장 슬롯을 클릭했을 때의 이벤트 핸들러
+        function handleSlotClick(event) {
+            const clickedSlot = event.currentTarget;
             
-            // Logic for dropping onto a field slot
-            if (isFieldSlot) {
-                // Check if the slot is already occupied
-                if (droppedZone.children.length > 0) {
-                    showMessage('이미 선수가 배치된 칸입니다.');
-                    return;
-                }
-
-                const requiredPosition = droppedZone.getAttribute('data-position');
-                const droppedPosition = draggedItem.getAttribute('data-position');
-                
-                // Check if the player's position matches the slot's requirement
-                if (droppedPosition !== requiredPosition) {
-                    showMessage(`${requiredPosition}만 배치할 수 있습니다!`);
-                    return;
-                }
-
-                // If dropping from the player list, remove from there
-                if (draggedItem.parentNode && draggedItem.parentNode.closest('.player-grid')) {
-                    draggedItem.parentNode.removeChild(draggedItem);
-                }
-
-                droppedZone.appendChild(draggedItem);
-                draggedItem.style.position = 'static';
-                draggedItem.style.transform = 'none';
-                draggedItem.style.left = ``;
-                draggedItem.style.top = ``;
-            } else if (isPlayerListZone) { // Logic for dropping back into the player list
-                 // Remove player from its current location (if on the field)
-                if (draggedItem.parentNode && draggedItem.parentNode.classList.contains('formation-slot')) {
-                    draggedItem.parentNode.removeChild(draggedItem);
-                }
-
-                // Find the correct section to drop the player back into
-                const playerPosition = draggedItem.getAttribute('data-position');
-                const targetGrid = droppedZone.querySelector(`.player-grid:has(div[data-position="${playerPosition}"])`);
+            // 슬롯에 이미 선수가 있다면, 그 선수를 선수 목록으로 돌려보냄
+            if (clickedSlot.children.length > 0) {
+                const playerCard = clickedSlot.children[0];
+                const playerPosition = playerCard.getAttribute('data-position');
+                const targetGrid = playerListContainer.querySelector(`.player-grid:has(div[data-position="${playerPosition}"])`) || playerListContainer.querySelector('.player-grid');
                 if (targetGrid) {
-                    targetGrid.appendChild(draggedItem);
-                } else {
-                    const firstGrid = droppedZone.querySelector('.player-grid');
-                    if (firstGrid) {
-                        firstGrid.appendChild(draggedItem);
-                    }
+                    targetGrid.appendChild(playerCard);
+                    playerCard.classList.remove('selected');
+                    selectedPlayer = null; // 선택 해제
+                    showMessage('선수가 명단으로 돌아갔습니다!');
                 }
-                draggedItem.style.position = 'static';
-                draggedItem.style.transform = 'none';
-                draggedItem.style.left = ``;
-                draggedItem.style.top = ``;
+                return;
             }
+            
+            // 선택된 선수가 없으면 메시지 표시
+            if (!selectedPlayer) {
+                showMessage('먼저 선수를 클릭해주세요!');
+                return;
+            }
+
+            // 슬롯의 포지션과 선택된 선수의 포지션이 일치하는지 확인
+            const requiredPosition = clickedSlot.getAttribute('data-position');
+            const droppedPosition = selectedPlayer.getAttribute('data-position');
+            
+            if (droppedPosition !== requiredPosition) {
+                showMessage(`${requiredPosition}만 배치할 수 있습니다!`);
+                return;
+            }
+
+            // 모든 검증 통과 후, 선수를 슬롯으로 이동
+            clickedSlot.appendChild(selectedPlayer);
+            selectedPlayer.classList.remove('selected');
+            selectedPlayer = null; // 선택 해제
         }
         
-        // Add click event listener to the regenerate button
+        // 다시 뽑기 버튼에 클릭 이벤트 리스너 추가
         regenerateButton.addEventListener('click', createPlayerCards);
 
-        // Initial card creation
+        // 초기 카드 생성
         createPlayerCards();
     </script>
 </body>
