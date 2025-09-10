@@ -7,6 +7,9 @@ st.set_page_config(
     layout="wide",
 )
 
+# Streamlit 환경에서 정적 파일의 경로를 가져옵니다.
+streamlit_static_path = os.getenv("STREAMLIT_STATIC_PATH", "")
+
 def read_html_file(file_path):
     """
     Reads an HTML file and returns its content.
@@ -14,8 +17,12 @@ def read_html_file(file_path):
     try:
         # Construct an absolute path based on the current script's directory
         # 스크립트의 현재 디렉터리를 기준으로 절대 경로를 구성합니다.
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(base_dir, file_path)
+        # Streamlit 환경 변수를 활용하여 경로를 보정합니다.
+        if streamlit_static_path:
+            full_path = os.path.join(streamlit_static_path, file_path)
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            full_path = os.path.join(base_dir, file_path)
 
         with open(full_path, 'r', encoding='utf-8') as f:
             html_content = f.read()
