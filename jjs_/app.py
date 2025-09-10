@@ -1,28 +1,18 @@
-import streamlit as st
-import streamlit.components.v1 as components
-import os
+from flask import Flask, render_template
 
-# 페이지 제목 설정
-st.title("⚽ 축구팀 구성 시뮬레이터 (Streamlit)")
-st.markdown("---")
+# Flask 애플리케이션 생성
+app = Flask(__name__)
 
-# index2.html 파일 경로 설정
-html_file_path = "index2.html"
+# 기본 URL('/')에 대한 라우트 설정
+@app.route('/')
+def index():
+    """
+    'index2.html' 파일을 렌더링하는 함수입니다.
+    """
+    return render_template('index2.html')
 
-try:
-    # 파일이 존재하는지 확인합니다.
-    if not os.path.exists(html_file_path):
-        raise FileNotFoundError
-
-    # 파일 경로를 열고 내용을 읽어옵니다.
-    with open(html_file_path, "r", encoding="utf-8") as f:
-        html_content = f.read()
-
-    # Streamlit에 HTML 내용을 표시합니다.
-    components.html(html_content, height=900, scrolling=True)
-
-except FileNotFoundError:
-    st.error(f"오류: '{html_file_path}' 파일을 찾을 수 없습니다.")
-    st.info(f"'{os.getcwd()}' 경로에 해당 파일이 있는지 확인해 주세요.")
-except Exception as e:
-    st.error(f"예상치 못한 오류가 발생했습니다: {e}")
+# 이 스크립트가 직접 실행될 때 웹 서버를 시작합니다.
+if __name__ == '__main__':
+    # 디버그 모드로 애플리케이션을 실행합니다.
+    # 코드를 변경하면 서버가 자동으로 재시작됩니다.
+    app.run(debug=True)
