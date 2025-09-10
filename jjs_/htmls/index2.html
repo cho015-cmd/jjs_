@@ -3,243 +3,491 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>축구팀 구성 시뮬레이션</title>
+    <title>Football Team Builder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Tailwind's gray-900 */
+        }
+        .player-card {
+            cursor: grab;
+            user-select: none;
+        }
+        .player-card:active {
+            cursor: grabbing;
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 1.5rem;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 0.75rem;
+            text-align: center;
+            color: white;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-box.show {
+            opacity: 1;
+        }
+        .formation-slot {
+            width: 100px;
+            height: 100px;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 9999px;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            transition: border-color 0.2s ease-in-out;
         }
-        .container {
-            background-color: #fff;
-            padding: 20px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 800px;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #006400;
-        }
-        .team-input-section {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-        .team-box {
-            background-color: #e9ecef;
-            padding: 20px;
-            border-radius: 8px;
-            flex: 1;
-            margin: 0 10px;
-        }
-        .team-box h3 {
-            text-align: center;
-            margin-top: 0;
-        }
-        .input-group {
-            margin-bottom: 10px;
-        }
-        .input-group label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: #006400;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: #005000;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: center;
-        }
-        th {
-            background-color: #006400;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        .message {
-            text-align: center;
-            font-weight: bold;
-            margin-top: 20px;
-            font-size: 1.1em;
-        }
-        .success {
-            color: #28a745;
-        }
-        .error {
-            color: #dc3545;
+        .formation-slot.active {
+            border-color: #fff;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>⚽ 축구팀 구성 시뮬레이터 ⚽</h1>
-        <p>각 팀의 포지션별 선수 수를 입력하고 '팀 구성하기' 버튼을 누르면 결과를 확인할 수 있습니다.</p>
+<body class="bg-gray-900 text-white min-h-screen p-8 flex flex-col items-center overflow-y-auto">
 
-        <div class="team-input-section">
-            <div class="team-box">
-                <h3>Team A</h3>
-                <div class="input-group">
-                    <label for="teamA-fwd">공격수</label>
-                    <input type="number" id="teamA-fwd" value="2" min="0">
-                </div>
-                <div class="input-group">
-                    <label for="teamA-mid">미드필더</label>
-                    <input type="number" id="teamA-mid" value="4" min="0">
-                </div>
-                <div class="input-group">
-                    <label for="teamA-def">수비수</label>
-                    <input type="number" id="teamA-def" value="4" min="0">
-                </div>
-                <div class="input-group">
-                    <label for="teamA-gk">골키퍼</label>
-                    <input type="number" id="teamA-gk" value="1" min="0">
-                </div>
-            </div>
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold mb-2">나만의 축구 팀 구성하기</h1>
+        <p class="text-lg text-gray-400">선수들을 드래그해서 경기장에 배치해보세요!</p>
+    </div>
 
-            <div class="team-box">
-                <h3>Team B</h3>
-                <div class="input-group">
-                    <label for="teamB-fwd">공격수</label>
-                    <input type="number" id="teamB-fwd" value="3" min="0">
-                </div>
-                <div class="input-group">
-                    <label for="teamB-mid">미드필더</label>
-                    <input type="number" id="teamB-mid" value="3" min="0">
-                </div>
-                <div class="input-group">
-                    <label for="teamB-def">수비수</label>
-                    <input type="number" id="teamB-def" value="4" min="0">
-                </div>
-                <div class="input-group">
-                    <label for="teamB-gk">골키퍼</label>
-                    <input type="number" id="teamB-gk" value="1" min="0">
-                </div>
-            </div>
+    <!-- 메시지 박스 -->
+    <div id="message-box" class="message-box"></div>
+
+    <!-- 경기장 -->
+    <div class="bg-green-700 w-full max-w-4xl h-[600px] rounded-2xl shadow-xl border-4 border-gray-800 relative overflow-hidden flex flex-col justify-between items-center py-12 px-4">
+        <!-- 필드 라인 -->
+        <div class="absolute inset-0 flex flex-col justify-center items-center">
+            <div class="w-full h-1/2 border-t-2 border-dashed border-white"></div>
+            <div class="w-32 h-32 rounded-full border-2 border-white absolute"></div>
         </div>
         
-        <button onclick="calculateTeams()">팀 구성하기</button>
+        <!-- 골대 -->
+        <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-16 bg-gray-800 rounded-b-lg"></div>
+        <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-48 h-16 bg-gray-800 rounded-t-lg"></div>
 
-        <div id="result-area">
-            <table>
-                <thead>
-                    <tr>
-                        <th>구분</th>
-                        <th>Team A</th>
-                        <th>Team B</th>
-                    </tr>
-                </thead>
-                <tbody id="result-table-body">
-                    <tr><td>총 인원</td><td id="teamA-total">-</td><td id="teamB-total">-</td></tr>
-                    <tr><td>주전</td><td id="teamA-onfield">-</td><td id="teamB-onfield">-</td></tr>
-                    <tr><td>벤치</td><td id="teamA-bench">-</td><td id="teamB-bench">-</td></tr>
-                    <tr><td>후보</td><td id="teamA-reserve">-</td><td id="teamB-reserve">-</td></tr>
-                    <tr><td>남은 인원</td><td id="teamA-leftover">-</td><td id="teamB-leftover">-</td></tr>
-                </tbody>
-            </table>
-            <div id="status-message" class="message"></div>
+        <!-- 포메이션 이름 표시 -->
+        <div id="formation-name" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-1 rounded-full text-lg font-bold"></div>
+
+        <!-- 포메이션 배치 칸 -->
+        <div id="formation-field" class="w-full h-full relative flex flex-col justify-between py-12 px-4">
+            <!-- Slots will be dynamically generated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- 선수 목록 -->
+    <div class="bg-gray-800 rounded-xl p-6 shadow-lg w-full max-w-4xl mt-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">선수 명단</h2>
+            <button id="regenerate-button" class="bg-blue-600 text-white p-2 rounded-full shadow-md hover:bg-blue-700 transition-colors duration-200">
+                다시 뽑기
+            </button>
+        </div>
+        <div id="player-list-container" class="space-y-6">
+            <!-- Player cards (dynamically generated by JavaScript in sections) -->
         </div>
     </div>
 
     <script>
-        function getTeamRoster(teamName) {
-            const fwd = parseInt(document.getElementById(`team${teamName}-fwd`).value);
-            const mid = parseInt(document.getElementById(`team${teamName}-mid`).value);
-            const def = parseInt(document.getElementById(`team${teamName}-def`).value);
-            const gk = parseInt(document.getElementById(`team${teamName}-gk`).value);
+        const allPlayers = [
+            { id: 'p1', name: '손흥민', position: '공격수', img: 'https://placehold.co/100x100/A0EEFF/000?text=SON' },
+            { id: 'p2', name: '케인', position: '공격수', img: 'https://placehold.co/100x100/FFC999/000?text=KANE' },
+            { id: 'p3', name: '음바페', position: '공격수', img: 'https://placehold.co/100x100/9999FF/000?text=MBAPPE' },
+            { id: 'p4', name: '호날두', position: '공격수', img: 'https://placehold.co/100x100/B0B0B0/000?text=CR7' },
+            { id: 'p5', name: '메시', position: '공격수', img: 'https://placehold.co/100x100/DDDDDD/000?text=MESSI' },
+            { id: 'p6', name: '네이마르', position: '공격수', img: 'https://placehold.co/100x100/99FF99/000?text=NEYMAR' },
+            { id: 'p7', name: '살라', position: '공격수', img: 'https://placehold.co/100x100/FFC8FF/000?text=SALAH' },
+            { id: 'p8', name: '레반도프스키', position: '공격수', img: 'https://placehold.co/100x100/FFC86F/000?text=LEWY' },
+            { id: 'p9', name: '홀란드', position: '공격수', img: 'https://placehold.co/100x100/FFB0B0/000?text=HAALAND' },
+            { id: 'p10', name: '데브라위너', position: '미드필더', img: 'https://placehold.co/100x100/A0FFD0/000?text=KDB' },
+            { id: 'p11', name: '모드리치', position: '미드필더', img: 'https://placehold.co/100x100/D0D0FF/000?text=MODRIC' },
+            { id: 'p12', name: '크로스', position: '미드필더', img: 'https://placehold.co/100x100/D0D0FF/000?text=KROOS' },
+            { id: 'p13', name: '카세미루', position: '미드필더', img: 'https://placehold.co/100x100/C0C0C0/000?text=CASEMIRO' },
+            { id: 'p14', name: '데 용', position: '미드필더', img: 'https://placehold.co/100x100/D0D0D0/000?text=F+DE+JONG' },
+            { id: 'p15', name: '캉테', position: '미드필더', img: 'https://placehold.co/100x100/E0E0E0/000?text=KANTE' },
+            { id: 'p16', name: '베컴', position: '미드필더', img: 'https://placehold.co/100x100/DDA0DD/000?text=BECKHAM' },
+            { id: 'p17', name: '지단', position: '미드필더', img: 'https://placehold.co/100x100/FFD700/000?text=ZIDANE' },
+            { id: 'p18', name: '토티', position: '미드필더', img: 'https://placehold.co/100x100/A0FFA0/000?text=TOTTI' },
+            { id: 'p19', name: '비에이라', position: '미드필더', img: 'https://placehold.co/100x100/A0D0FF/000?text=VIERA' },
+            { id: 'p20', name: '피를로', position: '미드필더', img: 'https://placehold.co/100x100/ADD8E6/000?text=PIRLO' },
+            { id: 'p21', name: '알론소', position: '미드필더', img: 'https://placehold.co/100x100/A0FFFF/000?text=ALONSO' },
+            { id: 'p22', name: '이니에스타', position: '미드필더', img: 'https://placehold.co/100x100/FFDAB9/000?text=INIESTA' },
+            { id: 'p23', name: '사비', position: '미드필더', img: 'https://placehold.co/100x100/C0E0FF/000?text=XAVI' },
+            { id: 'p24', name: '김민재', position: '수비수', img: 'https://placehold.co/100x100/99EEDD/000?text=MINJAE' },
+            { id: 'p25', name: '반다이크', position: '수비수', img: 'https://placehold.co/100x100/AAAAAA/000?text=VVD' },
+            { id: 'p26', name: '라모스', position: '수비수', img: 'https://placehold.co/100x100/C0C0C0/000?text=RAMOS' },
+            { id: 'p27', name: '말디니', position: '수비수', img: 'https://placehold.co/100x100/FFB0B0/000?text=MALDINI' },
+            { id: 'p28', name: '푸욜', position: '수비수', img: 'https://placehold.co/100x100/DDAADD/000?text=PUYOL' },
+            { id: 'p29', name: '카를루스', position: '수비수', img: 'https://placehold.co/100x100/B0FFB0/000?text=CARLOS' },
+            { id: 'p30', name: '마르셀루', position: '수비수', img: 'https://placehold.co/100x100/AADDFF/000?text=MARCELO' },
+            { id: 'p31', name: '네스타', position: '수비수', img: 'https://placehold.co/100x100/A0D0A0/000?text=NESTA' },
+            { id: 'p32', name: '칸나바로', position: '수비수', img: 'https://placehold.co/100x100/FFD0A0/000?text=CANNAVARO' },
+            { id: 'p33', name: '카푸', position: '수비수', img: 'https://placehold.co/100x100/E0A0A0/000?text=CAFU' },
+            { id: 'p34', name: '피케', position: '수비수', img: 'https://placehold.co/100x100/FFC9FF/000?text=PIQUE' },
+            { id: 'p35', name: '루시우', position: '수비수', img: 'https://placehold.co/100x100/A0FFD0/000?text=LUCIO' },
+            { id: 'p36', name: '발렌시아', position: '수비수', img: 'https://placehold.co/100x100/D0D0D0/000?text=VALENCIA' },
+            { id: 'p37', name: '테리', position: '수비수', img: 'https://placehold.co/100x100/9999FF/000?text=TERRY' },
+            { id: 'p38', name: '알라바', position: '수비수', img: 'https://placehold.co/100x100/B0B0FF/000?text=ALABA' },
+            { id: 'p39', name: '키에사', position: '공격수', img: 'https://placehold.co/100x100/FFDDAA/000?text=CHIESA' },
+            { id: 'p40', name: '벤제마', position: '공격수', img: 'https://placehold.co/100x100/FFA0FF/000?text=BENZEMA' },
+            { id: 'p41', name: '아구에로', position: '공격수', img: 'https://placehold.co/100x100/E0DDAA/000?text=AGUERO' },
+            { id: 'p42', name: '뮐러', position: '공격수', img: 'https://placehold.co/100x100/DDEEFF/000?text=MULLER' },
+            { id: 'p43', name: '페르난데스', position: '미드필더', img: 'https://placehold.co/100x100/FFCCEE/000?text=FERNANDES' },
+            { id: 'p44', name: '비달', position: '미드필더', img: 'https://placehold.co/100x100/D0FFCC/000?text=VIDAL' },
+            { id: 'p45', name: '알바', position: '수비수', img: 'https://placehold.co/100x100/FFDDA0/000?text=ALBA' },
+            { id: 'p46', name: '알렉산더-아놀드', position: '수비수', img: 'https://placehold.co/100x100/DDEEAA/000?text=ARNOLD' },
+            { id: 'p47', name: '돈나룸마', position: '골키퍼', img: 'https://placehold.co/100x100/CCCCEE/000?text=DONNARUMMA' },
+            { id: 'p48', name: '쿠르투아', position: '골키퍼', img: 'https://placehold.co/100x100/CCCCCC/000?text=COURTOIS' },
+            { id: 'p49', name: '오블락', position: '골키퍼', img: 'https://placehold.co/100x100/E0E0E0/000?text=OBLAK' },
+            { id: 'p50', name: '알리송', position: '골키퍼', img: 'https://placehold.co/100x100/D0D0D0/000?text=ALISSON' },
+            { id: 'p51', name: '에데르송', position: '골키퍼', img: 'https://placehold.co/100x100/E5E5E5/000?text=EDERSON' },
+            { id: 'p52', name: '노이어', position: '골키퍼', img: 'https://placehold.co/100x100/F5F5F5/000?text=NEUER' },
+            { id: 'p53', name: '미나미노', position: '공격수', img: 'https://placehold.co/100x100/FFF8DC/000?text=MINAMINO' },
+            { id: 'p54', name: '벤탄쿠르', position: '미드필더', img: 'https://placehold.co/100x100/F0FFF0/000?text=BENTANCUR' },
+            { id: 'p55', name: '로메로', position: '수비수', img: 'https://placehold.co/100x100/E0FFFF/000?text=ROMERO' },
+            { id: 'p56', name: '요렌테', position: '미드필더', img: 'https://placehold.co/100x100/D0F0FF/000?text=LLORENTE' },
+            { id: 'p57', name: '이강인', position: '미드필더', img: 'https://placehold.co/100x100/C0E0FF/000?text=KANGIN' },
+            { id: 'p58', name: '김승규', position: '골키퍼', img: 'https://placehold.co/100x100/B0D0FF/000?text=SEUNGGYU' },
+            { id: 'p59', name: '황의조', position: '공격수', img: 'https://placehold.co/100x100/A0C0FF/000?text=UIJO' },
+            { id: 'p60', name: '홍철', position: '수비수', img: 'https://placehold.co/100x100/90B0FF/000?text=CHUL' },
+            { id: 'p61', name: '황인범', position: '미드필더', img: 'https://placehold.co/100x100/80A0FF/000?text=INBOM' },
+            { id: 'p62', name: '이재성', position: '미드필더', img: 'https://placehold.co/100x100/7090FF/000?text=JAESUNG' },
+            { id: 'p63', name: '조규성', position: '공격수', img: 'https://placehold.co/100x100/6080FF/000?text=GUESUNG' },
+            { id: 'p64', name: '아자르', position: '공격수', img: 'https://placehold.co/100x100/5070FF/000?text=HAZARD' },
+            { id: 'p65', name: '그릴리쉬', position: '미드필더', img: 'https://placehold.co/100x100/4060FF/000?text=GREALISH' },
+            { id: 'p66', name: '버질', position: '수비수', img: 'https://placehold.co/100x100/3050FF/000?text=VIRGIL' },
+            { id: 'p67', name: '브루노', position: '미드필더', img: 'https://placehold.co/100x100/2040FF/000?text=BRUNO' },
+            { id: 'p68', name: '페드리', position: '미드필더', img: 'https://placehold.co/100x100/1030FF/000?text=PEDRI' },
+            { id: 'p69', name: '가비', position: '미드필더', img: 'https://placehold.co/100x100/0020FF/000?text=GAVI' },
+            { id: 'p70', name: '쿠보', position: '미드필더', img: 'https://placehold.co/100x100/0010FF/000?text=KUBO' },
+            { id: 'p71', name: '하키미', position: '수비수', img: 'https://placehold.co/100x100/0000FF/000?text=HAKIMI' },
+            { id: 'p72', name: '알폰소 데이비스', position: '수비수', img: 'https://placehold.co/100x100/0010E0/000?text=DAVIES' },
+            { id: 'p73', name: '클린스만', position: '공격수', img: 'https://placehold.co/100x100/0020C0/000?text=KLINSMANN' },
+            { id: 'p74', name: '라우드루프', position: '미드필더', img: 'https://placehold.co/100x100/0030A0/000?text=LAUDRUP' },
+            { id: 'p75', name: '베르캄프', position: '공격수', img: 'https://placehold.co/100x100/004080/000?text=BERGKAMP' },
+            { id: 'p76', name: '오르테가', position: '공격수', img: 'https://placehold.co/100x100/005060/000?text=ORTEGA' },
+            { id: 'p77', name: '오언', position: '공격수', img: 'https://placehold.co/100x100/006040/000?text=OWEN' },
+            { id: 'p78', name: '앙리', position: '공격수', img: 'https://placehold.co/100x100/007020/000?text=HENRY' },
+            { id: 'p79', name: '호나우두', position: '공격수', img: 'https://placehold.co/100x100/008000/000?text=RONALDO' },
+            { id: 'p80', name: '딩요', position: '미드필더', img: 'https://placehold.co/100x100/109000/000?text=DINHO' },
+            { id: 'p81', name: '마테우스', position: '미드필더', img: 'https://placehold.co/100x100/20A000/000?text=MATTHAUS' },
+            { id: 'p82', name: '네드베드', position: '미드필더', img: 'https://placehold.co/100x100/30B000/000?text=NEDVED' },
+            { id: 'p83', name: '푸스카스', position: '공격수', img: 'https://placehold.co/100x100/40C000/000?text=PUSKAS' },
+            { id: 'p84', name: '페르난지뉴', position: '미드필더', img: 'https://placehold.co/100x100/50D000/000?text=FERNANDINHO' },
+            { id: 'p85', name: '루카쿠', position: '공격수', img: 'https://placehold.co/100x100/60E000/000?text=LUKAKU' },
+            { id: 'p86', name: '래쉬포드', position: '공격수', img: 'https://placehold.co/100x100/70F000/000?text=RASHFORD' },
+            { id: 'p87', name: '제라드', position: '미드필더', img: 'https://placehold.co/100x100/80FF00/000?text=GERRARD' },
+            { id: 'p88', name: '램파드', position: '미드필더', img: 'https://placehold.co/100x100/90FF00/000?text=LAMPARD' },
+            { id: 'p89', name: '베른하르트', position: '수비수', img: 'https://placehold.co/100x100/A0FF00/000?text=BERNHARDT' },
+            { id: 'p90', name: '사카', position: '공격수', img: 'https://placehold.co/100x100/B0FF00/000?text=SAKA' },
+            { id: 'p91', name: '라이스', position: '미드필더', img: 'https://placehold.co/100x100/C0FF00/000?text=RICE' },
+            { id: 'p92', name: '카카', position: '미드필더', img: 'https://placehold.co/100x100/D0FF00/000?text=KAKA' },
+            { id: 'p93', name: '마라도나', position: '공격수', img: 'https://placehold.co/100x100/E0FF00/000?text=MARADONA' },
+            { id: 'p94', name: '펠레', position: '공격수', img: 'https://placehold.co/100x100/F0FF00/000?text=PELE' },
+            { id: 'p95', name: '호마리우', position: '공격수', img: 'https://placehold.co/100x100/FFFF00/000?text=ROMARIO' },
+            { id: 'p96', name: '히바우두', position: '공격수', img: 'https://placehold.co/100x100/FFEC00/000?text=RIVALDO' },
+            { id: 'p97', name: '베켄바워', position: '수비수', img: 'https://placehold.co/100x100/FFD800/000?text=BECKENBAUER' },
+            { id: 'p98', name: '카를레스', position: '수비수', img: 'https://placehold.co/100x100/FFC400/000?text=CARLES' },
+            { id: 'p99', name: '클라이네', position: '수비수', img: 'https://placehold.co/100x100/FFB000/000?text=KLAINE' },
+            { id: 'p100', name: '자카', position: '미드필더', img: 'https://placehold.co/100x100/FF9C00/000?text=Xhaka' }
+        ];
 
-            if (isNaN(fwd) || isNaN(mid) || isNaN(def) || isNaN(gk) || fwd < 0 || mid < 0 || def < 0 || gk < 0) {
-                alert("유효한 숫자를 입력해주세요.");
-                return null;
+        // 다양한 포메이션 정의
+        const formations = [
+            {
+                name: '4-4-2',
+                rows: [
+                    { position: '공격수', count: 2 },
+                    { position: '미드필더', count: 4 },
+                    { position: '수비수', count: 4 },
+                    { position: '골키퍼', count: 1 }
+                ]
+            },
+            {
+                name: '4-2-3-1',
+                rows: [
+                    { position: '공격수', count: 1 },
+                    { position: '공격수', count: 3 },
+                    { position: '미드필더', count: 2 },
+                    { position: '수비수', count: 4 },
+                    { position: '골키퍼', count: 1 }
+                ]
+            },
+            {
+                name: '4-3-3',
+                rows: [
+                    { position: '공격수', count: 3 },
+                    { position: '미드필더', count: 3 },
+                    { position: '수비수', count: 4 },
+                    { position: '골키퍼', count: 1 }
+                ]
+            },
+            {
+                name: '3-5-2',
+                rows: [
+                    { position: '공격수', count: 2 },
+                    { position: '미드필더', count: 5 },
+                    { position: '수비수', count: 3 },
+                    { position: '골키퍼', count: 1 }
+                ]
+            },
+            {
+                name: '5-3-2',
+                rows: [
+                    { position: '공격수', count: 2 },
+                    { position: '미드필더', count: 3 },
+                    { position: '수비수', count: 5 },
+                    { position: '골키퍼', count: 1 }
+                ]
             }
+        ];
 
-            const totalPlayers = fwd + mid + def + gk;
-            
-            // 주전(on_field) 11명 배치
-            const onFieldPlayers = Math.min(totalPlayers, 11);
-            let remainingPlayers = totalPlayers - onFieldPlayers;
-            
-            // 벤치(bench) 7명 배치
-            const benchPlayers = Math.min(remainingPlayers, 7);
-            remainingPlayers -= benchPlayers;
-            
-            // 후보(reserve) 10명 배치
-            const reservePlayers = Math.min(remainingPlayers, 10);
-            remainingPlayers -= reservePlayers;
-            
-            const leftoverPlayers = remainingPlayers;
-            
-            return {
-                total: totalPlayers,
-                onField: onFieldPlayers,
-                bench: benchPlayers,
-                reserve: reservePlayers,
-                leftover: leftoverPlayers
+        const playerListContainer = document.getElementById('player-list-container');
+        const formationField = document.getElementById('formation-field');
+        const formationNameDisplay = document.getElementById('formation-name');
+        const messageBox = document.getElementById('message-box');
+        const regenerateButton = document.getElementById('regenerate-button');
+        
+        let draggedItem = null;
+        let playerSlots = [];
+
+        // Function to show a message box
+        function showMessage(msg) {
+            messageBox.textContent = msg;
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 1500);
+        }
+
+        // Function to select players by specific counts for each position
+        function getPlayersByPosition(playerList, counts) {
+            const playersByPosition = {
+                '공격수': [],
+                '미드필더': [],
+                '수비수': [],
+                '골키퍼': []
             };
+
+            // Categorize all players by position
+            playerList.forEach(player => {
+                if (playersByPosition[player.position]) {
+                    playersByPosition[player.position].push(player);
+                }
+            });
+
+            const selectedPlayers = [];
+            for (const position in counts) {
+                const count = counts[position];
+                const availablePlayers = playersByPosition[position];
+                // Shuffle players for randomness
+                availablePlayers.sort(() => 0.5 - Math.random());
+                selectedPlayers.push(...availablePlayers.slice(0, count));
+            }
+            return selectedPlayers;
         }
 
-        function calculateTeams() {
-            const teamA = getTeamRoster('A');
-            const teamB = getTeamRoster('B');
+        // Function to generate field slots based on the chosen formation
+        function generateFieldSlots(formation) {
+            formationField.innerHTML = '';
+            formationNameDisplay.textContent = formation.name;
 
-            if (!teamA || !teamB) {
-                return;
-            }
+            formation.rows.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.classList.add('flex-grow', 'flex', 'justify-around', 'items-center', 'w-full');
+                
+                for (let i = 0; i < row.count; i++) {
+                    const slot = document.createElement('div');
+                    slot.classList.add('formation-slot');
+                    slot.setAttribute('data-position', row.position);
+                    rowDiv.appendChild(slot);
+                }
+                formationField.appendChild(rowDiv);
+            });
 
-            document.getElementById('teamA-total').innerText = teamA.total;
-            document.getElementById('teamA-onfield').innerText = teamA.onField;
-            document.getElementById('teamA-bench').innerText = teamA.bench;
-            document.getElementById('teamA-reserve').innerText = teamA.reserve;
-            document.getElementById('teamA-leftover').innerText = teamA.leftover;
+            // Update playerSlots array and drop zone listeners
+            playerSlots = document.querySelectorAll('.formation-slot');
+            setupDropZones();
+        }
+
+        // Function to dynamically create player cards
+        function createPlayerCards() {
+            // Clear the field and player list
+            playerListContainer.innerHTML = '';
             
-            document.getElementById('teamB-total').innerText = teamB.total;
-            document.getElementById('teamB-onfield').innerText = teamB.onField;
-            document.getElementById('teamB-bench').innerText = teamB.bench;
-            document.getElementById('teamB-reserve').innerText = teamB.reserve;
-            document.getElementById('teamB-leftover').innerText = teamB.leftover;
+            // Randomly select a formation and generate slots
+            const randomFormation = formations[Math.floor(Math.random() * formations.length)];
+            generateFieldSlots(randomFormation);
 
-            const statusMessageDiv = document.getElementById('status-message');
-            if (teamA.onField === 11 && teamB.onField === 11) {
-                statusMessageDiv.innerText = "🎉 양 팀 모두 11명의 주전 선수가 구성되어 경기를 시작할 수 있습니다!";
-                statusMessageDiv.className = 'message success';
-            } else {
-                statusMessageDiv.innerText = "❌ 양 팀 중 11명이 채워지지 않은 팀이 있어 경기 진행이 어렵습니다.";
-                statusMessageDiv.className = 'message error';
+            // Define the number of players for each position
+            const playerCounts = {
+                '공격수': 6,
+                '미드필더': 6,
+                '수비수': 6,
+                '골키퍼': 2
+            };
+            
+            const players = getPlayersByPosition(allPlayers, playerCounts);
+
+            // Group players by position for display
+            const playersByPosition = players.reduce((acc, player) => {
+                (acc[player.position] = acc[player.position] || []).push(player);
+                return acc;
+            }, {});
+
+            // Create sections for each position
+            const positionsInOrder = ['공격수', '미드필더', '수비수', '골키퍼'];
+            positionsInOrder.forEach(position => {
+                if (playersByPosition[position]) {
+                    const section = document.createElement('div');
+                    section.classList.add('space-y-4');
+                    section.innerHTML = `
+                        <h3 class="text-xl font-semibold border-b border-gray-600 pb-2">${position}</h3>
+                        <div class="player-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+                    `;
+                    const gridElement = section.querySelector('.player-grid');
+                    
+                    playersByPosition[position].forEach(player => {
+                        const card = document.createElement('div');
+                        card.id = player.id;
+                        card.draggable = true;
+                        card.classList.add('player-card', 'bg-gray-700', 'p-4', 'rounded-lg', 'text-center', 'shadow-md', 'transition-transform', 'duration-200', 'hover:scale-105');
+                        card.setAttribute('data-position', player.position);
+                        card.innerHTML = `
+                            <img src="${player.img}" alt="${player.name}" class="w-16 h-16 rounded-full mx-auto mb-2">
+                            <div class="font-bold text-sm">${player.name}</div>
+                            <div class="text-xs text-gray-400">${player.position}</div>
+                        `;
+                        card.addEventListener('dragstart', dragStart);
+                        card.addEventListener('dragend', dragEnd);
+                        gridElement.appendChild(card);
+                    });
+                    
+                    playerListContainer.appendChild(section);
+                }
+            });
+        }
+
+        // Drag start event
+        function dragStart(event) {
+            draggedItem = event.target.closest('.player-card');
+            if (draggedItem) {
+                event.dataTransfer.setData('text/plain', draggedItem.getAttribute('data-position'));
+                event.dataTransfer.setDragImage(draggedItem, 0, 0);
+
+                setTimeout(() => {
+                    draggedItem.style.opacity = '0.5';
+                }, 0);
             }
         }
+
+        // Drag end event
+        function dragEnd() {
+            if (draggedItem) {
+                draggedItem.style.opacity = '1';
+                draggedItem = null;
+            }
+        }
+
+        // Setup drop zone event listeners
+        function setupDropZones() {
+            const dropZones = [playerListContainer, ...playerSlots];
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', dragOver);
+                zone.addEventListener('dragenter', dragEnter);
+                zone.addEventListener('dragleave', dragLeave);
+                zone.addEventListener('drop', dragDrop);
+            });
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+        }
+
+        function dragEnter(event) {
+            event.preventDefault();
+            const zone = event.currentTarget;
+            zone.classList.add('active');
+        }
+
+        function dragLeave(event) {
+            const zone = event.currentTarget;
+            zone.classList.remove('active');
+        }
+
+        function dragDrop(event) {
+            event.preventDefault();
+            const droppedZone = event.currentTarget;
+            droppedZone.classList.remove('active');
+            
+            if (!draggedItem) return;
+
+            const isPlayerListZone = droppedZone.id === 'player-list-container';
+            const isFieldSlot = droppedZone.classList.contains('formation-slot');
+            
+            // Logic for dropping onto a field slot
+            if (isFieldSlot) {
+                // Check if the slot is already occupied
+                if (droppedZone.children.length > 0) {
+                    showMessage('이미 선수가 배치된 칸입니다.');
+                    return;
+                }
+
+                const requiredPosition = droppedZone.getAttribute('data-position');
+                const droppedPosition = draggedItem.getAttribute('data-position');
+                
+                // Check if the player's position matches the slot's requirement
+                if (droppedPosition !== requiredPosition) {
+                    showMessage(`${requiredPosition}만 배치할 수 있습니다!`);
+                    return;
+                }
+
+                // If dropping from the player list, remove from there
+                if (draggedItem.parentNode && draggedItem.parentNode.closest('.player-grid')) {
+                    draggedItem.parentNode.removeChild(draggedItem);
+                }
+
+                droppedZone.appendChild(draggedItem);
+                draggedItem.style.position = 'static';
+                draggedItem.style.transform = 'none';
+                draggedItem.style.left = ``;
+                draggedItem.style.top = ``;
+            } else if (isPlayerListZone) { // Logic for dropping back into the player list
+                 // Remove player from its current location (if on the field)
+                if (draggedItem.parentNode && draggedItem.parentNode.classList.contains('formation-slot')) {
+                    draggedItem.parentNode.removeChild(draggedItem);
+                }
+
+                // Find the correct section to drop the player back into
+                const playerPosition = draggedItem.getAttribute('data-position');
+                const targetGrid = droppedZone.querySelector(`.player-grid:has(div[data-position="${playerPosition}"])`);
+                if (targetGrid) {
+                    targetGrid.appendChild(draggedItem);
+                } else {
+                    const firstGrid = droppedZone.querySelector('.player-grid');
+                    if (firstGrid) {
+                        firstGrid.appendChild(draggedItem);
+                    }
+                }
+                draggedItem.style.position = 'static';
+                draggedItem.style.transform = 'none';
+                draggedItem.style.left = ``;
+                draggedItem.style.top = ``;
+            }
+        }
+        
+        // Add click event listener to the regenerate button
+        regenerateButton.addEventListener('click', createPlayerCards);
+
+        // Initial card creation
+        createPlayerCards();
     </script>
 </body>
 </html>
