@@ -1,19 +1,29 @@
-from flask import Flask, render_template
+import streamlit as st
+import os
 
-# Flask 애플리케이션 생성
-# 'template_folder'를 현재 폴더(.)로 설정하여 HTML 파일을 바로 찾도록 합니다.
-app = Flask(__name__, template_folder='.')
+st.set_page_config(
+    page_title="Football Team Builder",
+    page_icon="⚽",
+    layout="wide",
+)
 
-# 기본 URL('/')에 대한 라우트 설정
-@app.route('/')
-def index():
+def read_html_file(file_path):
     """
-    'index2.html' 파일을 렌더링하는 함수입니다.
+    Reads an HTML file and returns its content.
     """
-    return render_template('index2.html')
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return html_content
+    except FileNotFoundError:
+        st.error(f"Error: The file '{file_path}' was not found.")
+        st.info(f"Please make sure '{file_path}' is in the correct directory.")
+        return None
 
-# 이 스크립트가 직접 실행될 때 웹 서버를 시작합니다.
-if __name__ == '__main__':
-    # 디버그 모드로 애플리케이션을 실행합니다.
-    # 코드를 변경하면 서버가 자동으로 재시작됩니다.
-    app.run(debug=True)
+if __name__ == "__main__":
+    html_file_path = "index2.html"
+    html_content = read_html_file(html_file_path)
+
+    if html_content:
+        # Render the HTML content
+        st.components.v1.html(html_content, height=800, scrolling=True)
