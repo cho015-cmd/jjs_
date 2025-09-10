@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>축구팀 구성 시뮬레이션</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #006400;
+        }
+        .team-input-section {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .team-box {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            flex: 1;
+            margin: 0 10px;
+        }
+        .team-box h3 {
+            text-align: center;
+            margin-top: 0;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #006400;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #005000;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #006400;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .message {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚽ 축구팀 구성 시뮬레이터 ⚽</h1>
+        <p>각 팀의 포지션별 선수 수를 입력하고 '팀 구성하기' 버튼을 누르면 결과를 확인할 수 있습니다.</p>
+
+        <div class="team-input-section">
+            <div class="team-box">
+                <h3>Team A</h3>
+                <div class="input-group">
+                    <label for="teamA-fwd">공격수</label>
+                    <input type="number" id="teamA-fwd" value="2" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="teamA-mid">미드필더</label>
+                    <input type="number" id="teamA-mid" value="4" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="teamA-def">수비수</label>
+                    <input type="number" id="teamA-def" value="4" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="teamA-gk">골키퍼</label>
+                    <input type="number" id="teamA-gk" value="1" min="0">
+                </div>
+            </div>
+
+            <div class="team-box">
+                <h3>Team B</h3>
+                <div class="input-group">
+                    <label for="teamB-fwd">공격수</label>
+                    <input type="number" id="teamB-fwd" value="3" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="teamB-mid">미드필더</label>
+                    <input type="number" id="teamB-mid" value="3" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="teamB-def">수비수</label>
+                    <input type="number" id="teamB-def" value="4" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="teamB-gk">골키퍼</label>
+                    <input type="number" id="teamB-gk" value="1" min="0">
+                </div>
+            </div>
+        </div>
+        
+        <button onclick="calculateTeams()">팀 구성하기</button>
+
+        <div id="result-area">
+            <table>
+                <thead>
+                    <tr>
+                        <th>구분</th>
+                        <th>Team A</th>
+                        <th>Team B</th>
+                    </tr>
+                </thead>
+                <tbody id="result-table-body">
+                    <tr><td>총 인원</td><td id="teamA-total">-</td><td id="teamB-total">-</td></tr>
+                    <tr><td>주전</td><td id="teamA-onfield">-</td><td id="teamB-onfield">-</td></tr>
+                    <tr><td>벤치</td><td id="teamA-bench">-</td><td id="teamB-bench">-</td></tr>
+                    <tr><td>후보</td><td id="teamA-reserve">-</td><td id="teamB-reserve">-</td></tr>
+                    <tr><td>남은 인원</td><td id="teamA-leftover">-</td><td id="teamB-leftover">-</td></tr>
+                </tbody>
+            </table>
+            <div id="status-message" class="message"></div>
+        </div>
+    </div>
+
+    <script>
+        function getTeamRoster(teamName) {
+            const fwd = parseInt(document.getElementById(`team${teamName}-fwd`).value);
+            const mid = parseInt(document.getElementById(`team${teamName}-mid`).value);
+            const def = parseInt(document.getElementById(`team${teamName}-def`).value);
+            const gk = parseInt(document.getElementById(`team${teamName}-gk`).value);
+
+            if (isNaN(fwd) || isNaN(mid) || isNaN(def) || isNaN(gk) || fwd < 0 || mid < 0 || def < 0 || gk < 0) {
+                alert("유효한 숫자를 입력해주세요.");
+                return null;
+            }
+
+            const totalPlayers = fwd + mid + def + gk;
+            
+            // 주전(on_field) 11명 배치
+            const onFieldPlayers = Math.min(totalPlayers, 11);
+            let remainingPlayers = totalPlayers - onFieldPlayers;
+            
+            // 벤치(bench) 7명 배치
+            const benchPlayers = Math.min(remainingPlayers, 7);
+            remainingPlayers -= benchPlayers;
+            
+            // 후보(reserve) 10명 배치
+            const reservePlayers = Math.min(remainingPlayers, 10);
+            remainingPlayers -= reservePlayers;
+            
+            const leftoverPlayers = remainingPlayers;
+            
+            return {
+                total: totalPlayers,
+                onField: onFieldPlayers,
+                bench: benchPlayers,
+                reserve: reservePlayers,
+                leftover: leftoverPlayers
+            };
+        }
+
+        function calculateTeams() {
+            const teamA = getTeamRoster('A');
+            const teamB = getTeamRoster('B');
+
+            if (!teamA || !teamB) {
+                return;
+            }
+
+            document.getElementById('teamA-total').innerText = teamA.total;
+            document.getElementById('teamA-onfield').innerText = teamA.onField;
+            document.getElementById('teamA-bench').innerText = teamA.bench;
+            document.getElementById('teamA-reserve').innerText = teamA.reserve;
+            document.getElementById('teamA-leftover').innerText = teamA.leftover;
+            
+            document.getElementById('teamB-total').innerText = teamB.total;
+            document.getElementById('teamB-onfield').innerText = teamB.onField;
+            document.getElementById('teamB-bench').innerText = teamB.bench;
+            document.getElementById('teamB-reserve').innerText = teamB.reserve;
+            document.getElementById('teamB-leftover').innerText = teamB.leftover;
+
+            const statusMessageDiv = document.getElementById('status-message');
+            if (teamA.onField === 11 && teamB.onField === 11) {
+                statusMessageDiv.innerText = "🎉 양 팀 모두 11명의 주전 선수가 구성되어 경기를 시작할 수 있습니다!";
+                statusMessageDiv.className = 'message success';
+            } else {
+                statusMessageDiv.innerText = "❌ 양 팀 중 11명이 채워지지 않은 팀이 있어 경기 진행이 어렵습니다.";
+                statusMessageDiv.className = 'message error';
+            }
+        }
+    </script>
+</body>
+</html>
