@@ -1,7 +1,8 @@
 from flask import Flask, render_template
 
 # Flask 애플리케이션 생성
-app = Flask(__name__)
+# 'template_folder'를 현재 폴더(.)로 설정하여 HTML 파일을 바로 찾도록 합니다.
+app = Flask(__name__, template_folder='.')
 
 # 기본 URL('/')에 대한 라우트 설정
 @app.route('/')
