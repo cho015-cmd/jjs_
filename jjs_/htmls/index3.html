@@ -10,7 +10,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(to bottom right, #1a202c, #4a0e4e); /* 대각선 검은색-보라색 그라데이션 */
+            background: linear-gradient(to bottom right, #1a202c, #4a0e4e); /* Diagonal black-purple gradient */
             color: #f8fafc;
             display: flex;
             flex-direction: column;
@@ -60,7 +60,7 @@
         }
 
         .card-hand.ai-turn {
-            background-color: #4a1c2f; /* AI 턴일 때 색상 변경 */
+            background-color: #4a1c2f; /* Change color on AI's turn */
         }
         
         .card {
@@ -485,7 +485,7 @@
             document.getElementById('results').classList.remove('hidden');
             document.getElementById('timeline').innerHTML = '<h2 class="text-2xl font-bold text-center mb-4">게임 기록</h2>';
             
-            // 카드 분배 로직
+            // Card distribution logic
             const createDeck = () => Array.from({ length: 70 }, (_, i) => i + 1);
             const shuffleDeck = (deck) => {
                 for (let i = deck.length - 1; i > 0; i--) {
@@ -501,7 +501,7 @@
             let cardIndex = 0;
             
             const dealCardAnimation = () => {
-                // 각 플레이어에게 7장의 카드를 분배
+                // Deal 7 cards to each player
                 if (cardIndex >= 28) {
                     dealButton.classList.add('hidden'); // Hide deal button after dealing
                     updateUI();
@@ -555,11 +555,13 @@
             biggerWinButton.classList.remove('active');
             smallerWinButton.classList.remove('active');
             dealButton.classList.remove('hidden');
+            dealButton.disabled = false;
             turnCounter.textContent = '';
             rankingOverlay.classList.remove('visible');
 
             updateUI(); // Clear all hands
-            startGame();
+            document.getElementById('timeline').innerHTML = '<h2 class="text-2xl font-bold text-center mb-4">게임 기록</h2>';
+            document.getElementById('results').classList.add('hidden');
         }
 
         const updateHand = (playerId, hand) => {
@@ -633,7 +635,7 @@
             } else {
                 document.getElementById('game-message').textContent = `${playerNames[currentPlayerIndex]}의 차례입니다.`;
                 document.getElementById(players[currentPlayerIndex]).classList.add('ai-turn');
-                // AI 턴 속도를 0.5초로 단축 (2배 빠르게)
+                // AI turn speed shortened to 0.5s (2x faster)
                 setTimeout(startAITurn, 500);
             }
         };
@@ -643,9 +645,16 @@
             const aiMode = Math.random() > 0.5 ? 'bigger' : 'smaller';
             
             let targetPlayerIndex;
-            do {
-                targetPlayerIndex = Math.floor(Math.random() * players.length);
-            } while (targetPlayerIndex === currentPlayerIndex || playerHands[targetPlayerIndex].length === 0);
+            const playersWithCards = playerHands.map((hand, index) => ({ hand, index })).filter(p => p.hand.length > 0 && p.index !== currentPlayerIndex);
+            
+            if (playersWithCards.length === 0) {
+                // No one to compare with, skip turn
+                nextTurn();
+                return;
+            }
+            
+            const randomPlayer = playersWithCards[Math.floor(Math.random() * playersWithCards.length)];
+            targetPlayerIndex = randomPlayer.index;
 
             const targetHand = playerHands[targetPlayerIndex];
 
@@ -682,7 +691,7 @@
                 }
                 
                 if (isInitiatorWinner) {
-                    // 승리: 대상 플레이어의 카드를 가져와 자신의 카드 배열에 무작위로 추가
+                    // Winner gets the opponent's card
                     const targetCardIndex = targetHand.indexOf(targetCard);
                     if (targetCardIndex > -1) {
                         targetHand.splice(targetCardIndex, 1);
@@ -693,7 +702,7 @@
                         playerCompareCard.classList.add('winner');
                     }
                 } else {
-                    // 패배: 자신의 카드를 상대 플레이어에게 넘겨줌
+                    // Loser's card is given to the opponent
                     const initiatorCardIndex = initiatorHand.indexOf(initiatorCard);
                     if (initiatorCardIndex > -1) {
                         initiatorHand.splice(initiatorCardIndex, 1);
@@ -727,15 +736,7 @@
         };
 
         const nextTurn = () => {
-            let nextIndex = (currentPlayerIndex + 1) % players.length;
-            
-            let turnsTaken = 0;
-            while (playerHands[nextIndex].length === 0 && turnsTaken < players.length) {
-                nextIndex = (nextIndex + 1) % players.length;
-                turnsTaken++;
-            }
-
-            if (playerHands[nextIndex].length === 0 || currentTurn >= totalTurns) {
+            if (currentTurn > totalTurns) {
                 endGame();
                 return;
             }
@@ -745,16 +746,32 @@
                 turnCounter.textContent = `현재 턴: ${currentTurn} / ${totalTurns}`;
             }
 
+            // Find the next player with cards
+            let nextIndex = (currentPlayerIndex + 1) % players.length;
+            let turnsChecked = 0;
+            while (playerHands[nextIndex].length === 0 && turnsChecked < players.length) {
+                nextIndex = (nextIndex + 1) % players.length;
+                turnsChecked++;
+            }
+
+            if (turnsChecked === players.length) {
+                // All players have 0 cards, end the game
+                endGame();
+                return;
+            }
+            
             currentPlayerIndex = nextIndex;
             
-            if (currentPlayerIndex === 0) {
-                document.getElementById('game-message').textContent = '내 차례입니다. 카드를 선택하고, 비교 방식을 선택한 후, 비교할 AI를 선택하세요.';
-            } else {
+            if (currentTurn <= totalTurns) {
                 startTurn();
             }
         };
 
         const endGame = () => {
+            if (currentTurn <= totalTurns) {
+                return; // Only end the game after all turns are complete
+            }
+            
             document.getElementById('game-message').textContent = `10턴이 모두 종료되었습니다. 게임이 끝났습니다.`;
             
             const playerScores = playerHands.map((hand, index) => ({
