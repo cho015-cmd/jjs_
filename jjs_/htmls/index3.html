@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cento Card Distribution</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom right, #1a202c, #4a0e4e); /* 대각선 검은색-보라색 그라데이션 */
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .game-layout {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .container {
+            flex: 2;
+            background-color: #2d3748;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+        }
+
+        .timeline {
+            flex: 1;
+            background-color: #2d3748;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-hand {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            min-height: 120px;
+            padding: 10px;
+            background-color: #4a5568;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        .card-hand.ai-turn {
+            background-color: #4a1c2f; /* AI 턴일 때 색상 변경 */
+        }
+        
+        .card {
+            width: 50px;
+            height: 75px;
+            background-color: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            color: #333; /* Make card numbers visible on white background */
+        }
+        
+        #player1 .card {
+            cursor: pointer;
+        }
+
+        .card.selected {
+            border: 3px solid #f97316;
+            transform: translateY(-5px) scale(1.1);
+        }
+
+        .hidden-card {
+            background-color: #555;
+            color: #fff;
+        }
+        
+        .player-section:not(#player1) .card-hand .card {
+            cursor: pointer;
+        }
+
+        .player-section:not(#player1) .card-hand .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .comparison-modes {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .mode-button {
+            padding: 8px 16px;
+            border-radius: 9999px;
+            transition: background-color 0.2s, transform 0.2s;
+            font-weight: bold;
+        }
+
+        .mode-button.active {
+            background-color: #34d399;
+            color: #1a202c;
+            box-shadow: 0 4px 10px rgba(52, 211, 153, 0.4);
+            transform: scale(1.05);
+        }
+
+        .comparison-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background-color: rgba(45, 55, 72, 0.9);
+            color: #f8fafc;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        .comparison-container.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .comparison-card {
+            width: 80px;
+            height: 120px;
+            font-size: 2rem;
+            color: #333;
+            transform: scale(0);
+            animation-name: dramatic-card-reveal;
+            animation-duration: 0.8s;
+            animation-fill-mode: forwards;
+        }
+        
+        .comparison-card.winner {
+            box-shadow: 0 0 20px #22c55e, inset 0 0 10px #22c55e;
+            animation: bounce 0.5s ease-in-out, winner-glow 1.5s infinite alternate;
+        }
+
+        @keyframes dramatic-card-reveal {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes bounce {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-10px) scale(1.1); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        @keyframes winner-glow {
+            from { box-shadow: 0 0 10px #22c55e, inset 0 0 5px #22c55e; }
+            to { box-shadow: 0 0 25px #22c55e, inset 0 0 15px #22c55e; }
+        }
+
+        .dealing-deck {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 75px;
+            background-color: #333;
+            border-radius: 6px;
+        }
+
+        .dealing-card {
+            position: absolute;
+            width: 50px;
+            height: 75px;
+            background-color: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            animation-name: deal;
+            animation-duration: 0.1s;
+            animation-timing-function: ease-in;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes deal {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--dest-x), var(--dest-y));
+                opacity: 1;
+            }
+        }
+        
+        /* New timeline styles */
+        .visual-timeline {
+            flex: 1;
+            background-color: #2d3748;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        .timeline-event {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            background-color: #4a5568;
+            color: #f8fafc;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 12px;
+            transition: transform 0.3s ease;
+        }
+        .timeline-event:hover {
+            transform: scale(1.02);
+        }
+        .timeline-card {
+            width: 30px;
+            height: 45px;
+            font-size: 0.8rem;
+            color: #333;
+        }
+        .timeline-result {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        .timeline-result.win {
+            color: #22c55e;
+        }
+        .timeline-result.loss {
+            color: #ef4444;
+        }
+        .timeline-names {
+            font-size: 0.75rem;
+            color: #a0aec0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-layout">
+        <div class="container">
+            <h1 class="text-3xl font-bold text-center mb-6">4인 첸토 카드 분배 (1-70)</h1>
+            <p class="text-center mb-6 text-gray-300">아래 버튼을 눌러 4명의 플레이어에게 각각 10장의 카드를 분배하세요.</p>
+            
+            <div class="flex justify-center mb-8">
+                <button id="dealButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors">
+                    카드 분배하기
+                </button>
+                <button id="restartButton" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors hidden">
+                    게임 다시 시작
+                </button>
+            </div>
+
+            <div id="results" class="space-y-6 hidden">
+                <h2 class="text-2xl font-bold text-center mb-4">분배 결과</h2>
+                <div id="game-message" class="text-center text-lg font-semibold mb-4"></div>
+
+                <div id="player1" class="player-section">
+                    <h3 class="font-semibold text-lg mb-2">플레이어</h3>
+                    <div class="comparison-modes">
+                        <button id="biggerWinButton" class="bg-gray-700 text-gray-300 hover:bg-gray-600 mode-button">큰 카드가 승리</button>
+                        <button id="smallerWinButton" class="bg-gray-700 text-gray-300 hover:bg-gray-600 mode-button">작은 카드가 승리</button>
+                    </div>
+                    <div class="card-hand mt-4"></div>
+                </div>
+                <div id="player2" class="player-section">
+                    <h3 class="font-semibold text-lg mb-2">AI 1</h3>
+                    <div class="card-hand"></div>
+                </div>
+                <div id="player3" class="player-section">
+                    <h3 class="font-semibold text-lg mb-2">AI 2</h3>
+                    <div class="card-hand"></div>
+                </div>
+                <div id="player4" class="player-section">
+                    <h3 class="font-semibold text-lg mb-2">AI 3</h3>
+                    <div class="card-hand"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="timeline" class="visual-timeline">
+            <h2 class="text-2xl font-bold text-center mb-4">게임 기록</h2>
+        </div>
+    </div>
+
+    <!-- Card comparison display -->
+    <div id="comparison-display" class="comparison-container">
+        <div id="player-compare-card" class="card comparison-card"></div>
+        <div class="text-3xl font-bold vs-text">vs</div>
+        <div id="ai-compare-card" class="card comparison-card"></div>
+    </div>
+
+    <script>
+        const dealButton = document.getElementById('dealButton');
+        const restartButton = document.getElementById('restartButton');
+        const biggerWinButton = document.getElementById('biggerWinButton');
+        const smallerWinButton = document.getElementById('smallerWinButton');
+
+        dealButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', restartGame);
+        biggerWinButton.addEventListener('click', () => setComparisonMode('bigger'));
+        smallerWinButton.addEventListener('click', () => setComparisonMode('smaller'));
+
+        let playerHands;
+        let selectedPlayerCard = null;
+        let selectedComparisonMode = null; // 'bigger' or 'smaller'
+        let currentPlayerIndex = 0; // 0: Player, 1: AI 1, 2: AI 2, 3: AI 3
+        const players = ['player1', 'player2', 'player3', 'player4'];
+        const playerNames = ['플레이어', 'AI 1', 'AI 2', 'AI 3'];
+
+        function setComparisonMode(mode) {
+            selectedComparisonMode = mode;
+            biggerWinButton.classList.remove('active');
+            smallerWinButton.classList.remove('active');
+            if (mode === 'bigger') {
+                biggerWinButton.classList.add('active');
+                document.getElementById('game-message').textContent = `큰 카드가 승리하는 방식을 선택했습니다. 이제 비교할 AI를 선택하세요.`;
+            } else {
+                smallerWinButton.classList.add('active');
+                document.getElementById('game-message').textContent = `작은 카드가 승리하는 방식을 선택했습니다. 이제 비교할 AI를 선택하세요.`;
+            }
+        }
+
+        function addVisualEvent(initiatorName, targetName, initiatorCard, targetCard, result, mode) {
+            const timeline = document.getElementById('timeline');
+            const eventDiv = document.createElement('div');
+            eventDiv.classList.add('timeline-event');
+
+            const namesDiv = document.createElement('div');
+            namesDiv.classList.add('timeline-names');
+            namesDiv.textContent = `${initiatorName} vs ${targetName}`;
+            eventDiv.appendChild(namesDiv);
+
+            const initiatorCardDiv = document.createElement('div');
+            initiatorCardDiv.classList.add('card', 'timeline-card');
+            initiatorCardDiv.textContent = initiatorCard;
+            eventDiv.appendChild(initiatorCardDiv);
+
+            const vsText = document.createElement('span');
+            vsText.textContent = `(${mode === 'bigger' ? '큰' : '작은'} 카드 승리) vs`;
+            vsText.classList.add('text-gray-400', 'text-sm');
+            eventDiv.appendChild(vsText);
+
+            const targetCardDiv = document.createElement('div');
+            targetCardDiv.classList.add('card', 'timeline-card', 'hidden-card');
+            targetCardDiv.textContent = targetCard;
+            eventDiv.appendChild(targetCardDiv);
+
+            const resultDiv = document.createElement('div');
+            resultDiv.classList.add('timeline-result');
+            resultDiv.textContent = result === 'win' ? '승리' : '패배';
+            resultDiv.classList.add(result === 'win' ? 'win' : 'loss');
+            eventDiv.appendChild(resultDiv);
+
+            timeline.prepend(eventDiv);
+        }
+        
+        function startGame() {
+            dealButton.disabled = true;
+            restartButton.classList.add('hidden'); // Hide restart button
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('timeline').innerHTML = '<h2 class="text-2xl font-bold text-center mb-4">게임 기록</h2>';
+            
+            // 카드 분배 로직
+            const createDeck = () => Array.from({ length: 70 }, (_, i) => i + 1);
+            const shuffleDeck = (deck) => {
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+            };
+            
+            const deck = createDeck();
+            shuffleDeck(deck);
+            
+            playerHands = [[], [], [], []];
+            let cardIndex = 0;
+            
+            const dealCardAnimation = () => {
+                if (cardIndex >= 40) {
+                    dealButton.classList.add('hidden'); // Hide deal button after dealing
+                    updateUI();
+                    startTurn();
+                    return;
+                }
+
+                const playerToDeal = cardIndex % 4;
+                const handElement = document.querySelector(`#${players[playerToDeal]} .card-hand`);
+                const cardValue = deck.pop();
+                playerHands[playerToDeal].push(cardValue);
+
+                const cardDiv = document.createElement('div');
+                cardDiv.classList.add('dealing-card');
+                handElement.appendChild(cardDiv);
+
+                const handRect = handElement.getBoundingClientRect();
+                const cardRect = cardDiv.getBoundingClientRect();
+                const destX = (handRect.left + handRect.width / 2) - (cardRect.left + cardRect.width / 2) - 10;
+                const destY = (handRect.top + handRect.height / 2) - (cardRect.top + cardRect.height / 2) - 10;
+
+                cardDiv.style.setProperty('--dest-x', `${destX}px`);
+
+                setTimeout(() => {
+                    handElement.removeChild(cardDiv);
+                    updateHand(players[playerToDeal], playerHands[playerToDeal]);
+                    cardIndex++;
+                    setTimeout(dealCardAnimation, 25);
+                }, 50);
+            };
+            
+            dealCardAnimation();
+        }
+        
+        function restartGame() {
+            // Reset game state
+            playerHands = [[], [], [], []];
+            selectedPlayerCard = null;
+            selectedComparisonMode = null;
+            currentPlayerIndex = 0;
+            
+            // Clear UI
+            document.getElementById('game-message').textContent = '';
+            document.getElementById('player1').classList.remove('ai-turn');
+            document.getElementById('player2').classList.remove('ai-turn');
+            document.getElementById('player3').classList.remove('ai-turn');
+            document.getElementById('player4').classList.remove('ai-turn');
+            biggerWinButton.classList.remove('active');
+            smallerWinButton.classList.remove('active');
+
+            updateUI(); // Clear all hands
+            startGame();
+        }
+
+        const updateHand = (playerId, hand) => {
+            const handElement = document.querySelector(`#${playerId} .card-hand`);
+            handElement.innerHTML = '';
+            hand.forEach(cardValue => {
+                const cardDiv = document.createElement('div');
+                cardDiv.classList.add('card');
+                cardDiv.setAttribute('data-value', cardValue);
+                if (playerId === 'player1') {
+                    cardDiv.textContent = cardValue;
+                    cardDiv.addEventListener('click', (e) => {
+                        const allPlayerCards = document.querySelectorAll('#player1 .card');
+                        allPlayerCards.forEach(card => card.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        selectedPlayerCard = parseInt(e.target.getAttribute('data-value'));
+                        document.getElementById('game-message').textContent = `내 카드 ${selectedPlayerCard}를 선택했습니다. 이제 비교 방식을 선택하세요.`;
+                    });
+                } else {
+                    cardDiv.classList.add('hidden-card');
+                    cardDiv.addEventListener('click', () => {
+                        if (selectedPlayerCard !== null && selectedComparisonMode !== null && currentPlayerIndex === 0) {
+                            const targetHand = playerHands[players.indexOf(playerId)];
+                            const targetCard = targetHand[Math.floor(Math.random() * targetHand.length)];
+                            compareAndSwapCards(0, players.indexOf(playerId), selectedPlayerCard, targetCard, selectedComparisonMode);
+                        } else {
+                            if (currentPlayerIndex !== 0) {
+                                document.getElementById('game-message').textContent = '내 차례가 아닙니다.';
+                            } else if (selectedPlayerCard === null) {
+                                document.getElementById('game-message').textContent = '먼저 내 카드를 선택하세요!';
+                            } else {
+                                document.getElementById('game-message').textContent = '먼저 비교 방식을 선택하세요!';
+                            }
+                        }
+                    });
+                }
+                handElement.appendChild(cardDiv);
+            });
+        };
+
+        const updateUI = () => {
+            players.forEach((id, index) => {
+                updateHand(id, playerHands[index]);
+            });
+        };
+
+        const startTurn = () => {
+            document.getElementById('player1').classList.remove('ai-turn');
+            document.getElementById('player2').classList.remove('ai-turn');
+            document.getElementById('player3').classList.remove('ai-turn');
+            document.getElementById('player4').classList.remove('ai-turn');
+
+            if (playerHands[currentPlayerIndex].length === 0) {
+                nextTurn();
+                return;
+            }
+
+            if (currentPlayerIndex === 0) {
+                document.getElementById('game-message').textContent = '내 차례입니다. 카드를 선택하고, 비교 방식을 선택한 후, 비교할 AI를 선택하세요.';
+            } else {
+                document.getElementById('game-message').textContent = `${playerNames[currentPlayerIndex]}의 차례입니다.`;
+                document.getElementById(players[currentPlayerIndex]).classList.add('ai-turn');
+                setTimeout(startAITurn, 2000);
+            }
+        };
+
+        const startAITurn = () => {
+            const aiHand = playerHands[currentPlayerIndex];
+            const aiMode = Math.random() > 0.5 ? 'bigger' : 'smaller';
+            
+            let targetPlayerIndex;
+            do {
+                targetPlayerIndex = Math.floor(Math.random() * players.length);
+            } while (targetPlayerIndex === currentPlayerIndex || playerHands[targetPlayerIndex].length === 0);
+
+            const targetHand = playerHands[targetPlayerIndex];
+
+            const aiCard = aiHand[Math.floor(Math.random() * aiHand.length)];
+            const targetCard = targetHand[Math.floor(Math.random() * targetHand.length)];
+            
+            compareAndSwapCards(currentPlayerIndex, targetPlayerIndex, aiCard, targetCard, aiMode);
+        };
+        
+        const compareAndSwapCards = (initiatorIndex, targetIndex, initiatorCard, targetCard, mode) => {
+            const initiatorHand = playerHands[initiatorIndex];
+            const targetHand = playerHands[targetIndex];
+            
+            const playerCompareCard = document.getElementById('player-compare-card');
+            const aiCompareCard = document.getElementById('ai-compare-card');
+            
+            playerCompareCard.textContent = initiatorCard;
+            aiCompareCard.textContent = targetCard;
+            
+            playerCompareCard.classList.remove('winner');
+            aiCompareCard.classList.remove('winner');
+
+            document.getElementById('comparison-display').classList.add('visible');
+            
+            setTimeout(() => {
+                let message = '';
+                let result = '';
+                let isInitiatorWinner = false;
+
+                if (mode === 'bigger') {
+                    isInitiatorWinner = initiatorCard > targetCard;
+                } else if (mode === 'smaller') {
+                    isInitiatorWinner = initiatorCard < targetCard;
+                }
+                
+                if (isInitiatorWinner) {
+                    // 승리: 대상 플레이어의 카드를 가져와 자신의 카드 배열에 무작위로 추가
+                    const targetCardIndex = targetHand.indexOf(targetCard);
+                    if (targetCardIndex > -1) {
+                        targetHand.splice(targetCardIndex, 1);
+                        const randomIndex = Math.floor(Math.random() * (initiatorHand.length + 1));
+                        initiatorHand.splice(randomIndex, 0, targetCard);
+                        message = `${playerNames[initiatorIndex]}가 승리했습니다! ${playerNames[targetIndex]}의 카드(${targetCard})를 가져옵니다.`;
+                        result = 'win';
+                        playerCompareCard.classList.add('winner');
+                    }
+                } else {
+                    // 패배: 자신의 카드를 상대 플레이어에게 넘겨줌
+                    const initiatorCardIndex = initiatorHand.indexOf(initiatorCard);
+                    if (initiatorCardIndex > -1) {
+                        initiatorHand.splice(initiatorCardIndex, 1);
+                        const randomIndex = Math.floor(Math.random() * (targetHand.length + 1));
+                        targetHand.splice(randomIndex, 0, initiatorCard);
+                        message = `${playerNames[targetIndex]}가 승리했습니다. ${playerNames[initiatorIndex]}의 카드(${initiatorCard})를 가져갑니다.`;
+                        result = 'loss';
+                        aiCompareCard.classList.add('winner');
+                    }
+                }
+
+                if (initiatorIndex === 0) {
+                    const allPlayerCards = document.querySelectorAll('#player1 .card');
+                    allPlayerCards.forEach(card => card.classList.remove('selected'));
+                    selectedPlayerCard = null;
+                    selectedComparisonMode = null;
+                    biggerWinButton.classList.remove('active');
+                    smallerWinButton.classList.remove('active');
+                }
+
+                document.getElementById('game-message').textContent = message;
+                addVisualEvent(playerNames[initiatorIndex], playerNames[targetIndex], initiatorCard, targetCard, result, mode);
+
+                setTimeout(() => {
+                    updateUI();
+                    document.getElementById('comparison-display').classList.remove('visible');
+                    nextTurn();
+                }, 2000);
+
+            }, 800);
+        };
+
+        const nextTurn = () => {
+            let nextIndex = (currentPlayerIndex + 1) % players.length;
+            
+            let turnsTaken = 0;
+            while (playerHands[nextIndex].length === 0 && turnsTaken < players.length) {
+                nextIndex = (nextIndex + 1) % players.length;
+                turnsTaken++;
+            }
+
+            if (playerHands[nextIndex].length === 0) {
+                document.getElementById('game-message').textContent = '더 이상 카드를 가진 플레이어가 없습니다. 게임 종료!';
+                restartButton.classList.remove('hidden'); // Show restart button
+                return;
+            }
+            
+            currentPlayerIndex = nextIndex;
+            
+            if (currentPlayerIndex === 0) {
+                document.getElementById('game-message').textContent = '내 차례입니다. 카드를 선택하고, 비교 방식을 선택한 후, 비교할 AI를 선택하세요.';
+            } else {
+                startTurn();
+            }
+        };
+    </script>
+</body>
+</html>
