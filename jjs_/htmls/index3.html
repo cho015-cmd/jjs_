@@ -42,7 +42,6 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             padding: 20px;
             overflow-y: auto;
-            max-height: 80vh;
             display: flex;
             flex-direction: column;
         }
@@ -224,7 +223,8 @@
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
             padding: 20px;
             overflow-y: auto;
-            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
         }
         .timeline-event {
             display: flex;
@@ -270,7 +270,7 @@
     <div class="game-layout">
         <div class="container">
             <h1 class="text-3xl font-bold text-center mb-6">4인 첸토 카드 분배 (1-70)</h1>
-            <p class="text-center mb-6 text-gray-300">아래 버튼을 눌러 4명의 플레이어에게 각각 10장의 카드를 분배하세요.</p>
+            <p class="text-center mb-6 text-gray-300">아래 버튼을 눌러 4명의 플레이어에게 각각 7장의 카드를 분배하세요.</p>
             
             <div class="flex justify-center mb-8">
                 <button id="dealButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors">
@@ -407,7 +407,8 @@
             let cardIndex = 0;
             
             const dealCardAnimation = () => {
-                if (cardIndex >= 40) {
+                // 각 플레이어에게 7장의 카드를 분배
+                if (cardIndex >= 28) {
                     dealButton.classList.add('hidden'); // Hide deal button after dealing
                     updateUI();
                     startTurn();
@@ -521,7 +522,8 @@
             } else {
                 document.getElementById('game-message').textContent = `${playerNames[currentPlayerIndex]}의 차례입니다.`;
                 document.getElementById(players[currentPlayerIndex]).classList.add('ai-turn');
-                setTimeout(startAITurn, 2000);
+                // AI 턴 속도를 0.5초로 단축 (2배 빠르게)
+                setTimeout(startAITurn, 500);
             }
         };
 
@@ -604,11 +606,12 @@
                 document.getElementById('game-message').textContent = message;
                 addVisualEvent(playerNames[initiatorIndex], playerNames[targetIndex], initiatorCard, targetCard, result, mode);
 
+                // 카드 비교 후 다음 턴으로 넘어가는 시간을 0.5초로 단축 (2배 빠르게)
                 setTimeout(() => {
                     updateUI();
                     document.getElementById('comparison-display').classList.remove('visible');
                     nextTurn();
-                }, 2000);
+                }, 500);
 
             }, 800);
         };
