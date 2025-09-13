@@ -2,8 +2,8 @@ import streamlit as st
 import os
 
 st.set_page_config(
-    page_title="Football Team Builder",
-    page_icon="⚽",
+    page_title="내 페이지",
+    page_icon="📂",
     layout="wide",
 )
 
@@ -42,3 +42,4 @@ if __name__ == "__main__":
         # Render the HTML content
         # HTML 콘텐츠를 렌더링합니다.
         st.components.v1.html(html_content, height=800, scrolling=True)
+
