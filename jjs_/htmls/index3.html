@@ -263,6 +263,81 @@
             color: #a0aec0;
             text-align: center;
         }
+
+        /* Ranking styles */
+        .ranking-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        .ranking-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .ranking-box {
+            background-color: #2d3748;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease-out;
+        }
+        .ranking-overlay.visible .ranking-box {
+            transform: scale(1);
+        }
+        .ranking-box h2 {
+            font-size: 2.25rem;
+            font-weight: bold;
+            color: #34d399;
+            margin-bottom: 20px;
+        }
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #4a5568;
+        }
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+        .ranking-item .rank {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #cbd5e1;
+        }
+        .ranking-item .name {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #f8fafc;
+        }
+        .ranking-item .count {
+            font-size: 1.2rem;
+            color: #a0aec0;
+        }
+        #closeRankingButton {
+            background-color: #ef4444;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 9999px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+        #closeRankingButton:hover {
+            background-color: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -274,7 +349,7 @@
             
             <div class="flex justify-center mb-8">
                 <button id="dealButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors">
-                    카드 분배하기
+                    게임 시작
                 </button>
                 <button id="restartButton" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors hidden">
                     게임 다시 시작
@@ -284,6 +359,7 @@
             <div id="results" class="space-y-6 hidden">
                 <h2 class="text-2xl font-bold text-center mb-4">분배 결과</h2>
                 <div id="game-message" class="text-center text-lg font-semibold mb-4"></div>
+                <div id="turn-counter" class="text-center text-xl font-bold mb-4"></div>
 
                 <div id="player1" class="player-section">
                     <h3 class="font-semibold text-lg mb-2">플레이어</h3>
@@ -320,21 +396,39 @@
         <div id="ai-compare-card" class="card comparison-card"></div>
     </div>
 
+    <!-- Ranking display -->
+    <div id="ranking-overlay" class="ranking-overlay">
+        <div id="ranking-box" class="ranking-box">
+            <h2>게임 종료!</h2>
+            <div id="ranking-list"></div>
+            <button id="closeRankingButton">닫기</button>
+        </div>
+    </div>
+
     <script>
         const dealButton = document.getElementById('dealButton');
         const restartButton = document.getElementById('restartButton');
         const biggerWinButton = document.getElementById('biggerWinButton');
         const smallerWinButton = document.getElementById('smallerWinButton');
+        const rankingOverlay = document.getElementById('ranking-overlay');
+        const closeRankingButton = document.getElementById('closeRankingButton');
+        const turnCounter = document.getElementById('turn-counter');
 
         dealButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', restartGame);
         biggerWinButton.addEventListener('click', () => setComparisonMode('bigger'));
         smallerWinButton.addEventListener('click', () => setComparisonMode('smaller'));
+        closeRankingButton.addEventListener('click', () => {
+            rankingOverlay.classList.remove('visible');
+            restartButton.classList.remove('hidden');
+        });
 
         let playerHands;
         let selectedPlayerCard = null;
         let selectedComparisonMode = null; // 'bigger' or 'smaller'
         let currentPlayerIndex = 0; // 0: Player, 1: AI 1, 2: AI 2, 3: AI 3
+        let currentTurn = 0;
+        const totalTurns = 10;
         const players = ['player1', 'player2', 'player3', 'player4'];
         const playerNames = ['플레이어', 'AI 1', 'AI 2', 'AI 3'];
 
@@ -411,6 +505,8 @@
                 if (cardIndex >= 28) {
                     dealButton.classList.add('hidden'); // Hide deal button after dealing
                     updateUI();
+                    currentTurn = 1;
+                    turnCounter.textContent = `현재 턴: ${currentTurn} / ${totalTurns}`;
                     startTurn();
                     return;
                 }
@@ -448,6 +544,7 @@
             selectedPlayerCard = null;
             selectedComparisonMode = null;
             currentPlayerIndex = 0;
+            currentTurn = 0;
             
             // Clear UI
             document.getElementById('game-message').textContent = '';
@@ -457,6 +554,9 @@
             document.getElementById('player4').classList.remove('ai-turn');
             biggerWinButton.classList.remove('active');
             smallerWinButton.classList.remove('active');
+            dealButton.classList.remove('hidden');
+            turnCounter.textContent = '';
+            rankingOverlay.classList.remove('visible');
 
             updateUI(); // Clear all hands
             startGame();
@@ -472,11 +572,17 @@
                 if (playerId === 'player1') {
                     cardDiv.textContent = cardValue;
                     cardDiv.addEventListener('click', (e) => {
-                        const allPlayerCards = document.querySelectorAll('#player1 .card');
-                        allPlayerCards.forEach(card => card.classList.remove('selected'));
-                        e.target.classList.add('selected');
-                        selectedPlayerCard = parseInt(e.target.getAttribute('data-value'));
-                        document.getElementById('game-message').textContent = `내 카드 ${selectedPlayerCard}를 선택했습니다. 이제 비교 방식을 선택하세요.`;
+                        if (currentPlayerIndex === 0 && selectedComparisonMode === null) {
+                            const allPlayerCards = document.querySelectorAll('#player1 .card');
+                            allPlayerCards.forEach(card => card.classList.remove('selected'));
+                            e.target.classList.add('selected');
+                            selectedPlayerCard = parseInt(e.target.getAttribute('data-value'));
+                            document.getElementById('game-message').textContent = `내 카드 ${selectedPlayerCard}를 선택했습니다. 이제 비교 방식을 선택하세요.`;
+                        } else if (currentPlayerIndex !== 0) {
+                            document.getElementById('game-message').textContent = '내 차례가 아닙니다.';
+                        } else if (selectedComparisonMode !== null) {
+                            document.getElementById('game-message').textContent = '이미 비교 방식이 선택되었습니다. AI를 선택하세요.';
+                        }
                     });
                 } else {
                     cardDiv.classList.add('hidden-card');
@@ -511,6 +617,11 @@
             document.getElementById('player2').classList.remove('ai-turn');
             document.getElementById('player3').classList.remove('ai-turn');
             document.getElementById('player4').classList.remove('ai-turn');
+
+            if (currentTurn > totalTurns) {
+                endGame();
+                return;
+            }
 
             if (playerHands[currentPlayerIndex].length === 0) {
                 nextTurn();
@@ -606,7 +717,6 @@
                 document.getElementById('game-message').textContent = message;
                 addVisualEvent(playerNames[initiatorIndex], playerNames[targetIndex], initiatorCard, targetCard, result, mode);
 
-                // 카드 비교 후 다음 턴으로 넘어가는 시간을 0.5초로 단축 (2배 빠르게)
                 setTimeout(() => {
                     updateUI();
                     document.getElementById('comparison-display').classList.remove('visible');
@@ -625,12 +735,16 @@
                 turnsTaken++;
             }
 
-            if (playerHands[nextIndex].length === 0) {
-                document.getElementById('game-message').textContent = '더 이상 카드를 가진 플레이어가 없습니다. 게임 종료!';
-                restartButton.classList.remove('hidden'); // Show restart button
+            if (playerHands[nextIndex].length === 0 || currentTurn >= totalTurns) {
+                endGame();
                 return;
             }
             
+            if (currentPlayerIndex === players.length - 1) {
+                currentTurn++;
+                turnCounter.textContent = `현재 턴: ${currentTurn} / ${totalTurns}`;
+            }
+
             currentPlayerIndex = nextIndex;
             
             if (currentPlayerIndex === 0) {
@@ -638,6 +752,32 @@
             } else {
                 startTurn();
             }
+        };
+
+        const endGame = () => {
+            document.getElementById('game-message').textContent = `10턴이 모두 종료되었습니다. 게임이 끝났습니다.`;
+            
+            const playerScores = playerHands.map((hand, index) => ({
+                name: playerNames[index],
+                count: hand.length
+            }));
+            
+            playerScores.sort((a, b) => b.count - a.count);
+            
+            const rankingList = document.getElementById('ranking-list');
+            rankingList.innerHTML = '';
+            playerScores.forEach((player, index) => {
+                const rankingItem = document.createElement('div');
+                rankingItem.classList.add('ranking-item');
+                rankingItem.innerHTML = `
+                    <span class="rank">${index + 1}위</span>
+                    <span class="name">${player.name}</span>
+                    <span class="count">${player.count}장</span>
+                `;
+                rankingList.appendChild(rankingItem);
+            });
+            
+            rankingOverlay.classList.add('visible');
         };
     </script>
 </body>
