@@ -3,8 +3,8 @@ import streamlit.components.v1 as components
 import os
 
 st.set_page_config(
-    page_title="HTML 고급 뷰어",
-    page_icon="✨",
+    page_title="HTML 탭 뷰어",
+    page_icon="📑",
     layout="wide",
 )
 
@@ -17,13 +17,12 @@ FILE_HEIGHTS = {
 }
 DEFAULT_HEIGHT = 1000
 
-# 🌟 HTML 파일 목록 및 고급스러운 설명 🌟
-# 사용자에게 보여줄 이름과 실제 파일 경로를 분리합니다.
+# HTML 파일 목록 및 탭 이름 설정
 HTML_FILE_MAP = {
-    "📊 프로젝트 개요 (index.html)": "htmls/index.html",
-    "📈 데이터 분석 결과 (index2.html)": "htmls/index2.html",
-    "📑 상세 보고서 (index3.html)": "htmls/index3.html",
-    "⚙️ 시스템 구성도 (index4.html": "htmls/index4.html",
+    "개요 📊": "htmls/index.html",
+    "분석 결과 📈": "htmls/index2.html",
+    "상세 보고서 📑": "htmls/index3.html",
+    "시스템 구성 ⚙️": "htmls/index4.html",
 }
 
 def read_html_file(file_path):
@@ -43,38 +42,28 @@ def read_html_file(file_path):
 
 if __name__ == "__main__":
     
-    # 🌟 상단 제목과 선택 영역을 분리하여 깔끔하게 배치 🌟
-    st.markdown("## ✨ 프로젝트 문서 고급 뷰어")
+    st.markdown("## 📑 프로젝트 문서 탭 뷰어")
     
-    # 1. 파일 선택 (고급진 옵션 이름 사용)
-    selected_option = st.selectbox(
-        "표시할 문서를 선택하세요:",
-        options=list(HTML_FILE_MAP.keys())
-    )
+    tab_names = list(HTML_FILE_MAP.keys())
+    tabs = st.tabs(tab_names) # 탭 생성
     
-    # 선택된 옵션에서 실제 파일 경로를 가져옵니다.
-    file_path_to_display = HTML_FILE_MAP[selected_option]
-    
-    # 2. 파일 내용 로드 및 표시
-    html_content = read_html_file(file_path_to_display)
-    
-    # 선택된 옵션 이름에서 실제 파일 이름만 추출하여 높이 맵에서 찾습니다.
-    # 예: "📊 프로젝트 개요 (index.html)" -> "index.html"
-    import re
-    match = re.search(r'\((.*?)\)', selected_option)
-    file_key = match.group(1) if match else None
-
-    current_height = FILE_HEIGHTS.get(file_key, DEFAULT_HEIGHT)
-
-    st.markdown("---")
-    
-    if html_content:
-        st.subheader(f"선택된 문서: {selected_option}")
-        st.info(f"파일 경로: `{file_path_to_display}` | 지정 높이: {current_height}px")
+    # 각 탭에 콘텐츠를 배치
+    for i, tab_name in enumerate(tab_names):
+        file_path_to_display = HTML_FILE_MAP[tab_name]
         
-        # 파일별로 지정된 height를 사용하여 잘림을 방지
-        st.components.v1.html(
-            html_content, 
-            height=current_height, 
-            scrolling=True
-        )
+        with tabs[i]: # 해당 탭 컨테이너 내부에 콘텐츠 작성 시작
+            html_content = read_html_file(file_path_to_display)
+            
+            # 파일 이름 추출 (예: '개요 📊' -> 'index.html')
+            file_base_name = os.path.basename(file_path_to_display)
+            current_height = FILE_HEIGHTS.get(file_base_name, DEFAULT_HEIGHT)
+
+            if html_content:
+                st.info(f"파일 경로: `{file_path_to_display}` | 지정 높이: {current_height}px")
+                
+                # 파일별로 지정된 height를 사용하여 잘림을 방지
+                st.components.v1.html(
+                    html_content, 
+                    height=current_height, 
+                    scrolling=True
+                )
