@@ -35,13 +35,14 @@ def read_html_file(file_path):
 if __name__ == "__main__":
     # You can now specify a relative path to the HTML file.
     # 이제 HTML 파일의 상대 경로를 지정할 수 있습니다.
-    html_file_path = "htmls/index2.html"
+    html_file_path = "htmls/index4.html"
     html_content = read_html_file(html_file_path)
 
     if html_content:
         # Render the HTML content
         # HTML 콘텐츠를 렌더링합니다.
         st.components.v1.html(html_content, height=800, scrolling=True)
+
 
 
 
