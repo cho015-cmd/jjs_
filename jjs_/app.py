@@ -8,13 +8,9 @@ st.set_page_config(
     layout="wide",
 )
 
-def open_new_tab(url):
-    open_script = f"""<script>window.open('{url}', '_blank').focus();</script>"""
-    components.html(open_script, height=0)
-
 def read_html_file(file_path):
     try:
-        # STREAMLIT_STATIC_PATH 환경 변수가 설정된 경우를 고려하여 경로를 찾습니다.
+        # 파일 경로 설정 (Streamlit 환경 변수 고려)
         streamlit_static_path = os.getenv("STREAMLIT_STATIC_PATH")
         if streamlit_static_path:
             full_path = os.path.join(streamlit_static_path, file_path)
@@ -30,17 +26,8 @@ def read_html_file(file_path):
 
 if __name__ == "__main__":
     
-    # 1. 외부 URL 새 탭 열기
-    st.header("새 탭에서 페이지 열기")
-    new_tab_url = "https://www.google.com" 
-    
-    if st.button("Google 열기 🚀"):
-        open_new_tab(new_tab_url)
-
-    st.markdown("---")
-
-    # 2. HTML 파일 선택 및 표시
-    st.header("HTML 콘텐츠 선택")
+    # 🌟 상단 제목 영역 간결화 🌟
+    st.markdown("## HTML 콘텐츠 뷰어")
     
     html_files = {
         "index.html": "htmls/index.html",
@@ -49,19 +36,22 @@ if __name__ == "__main__":
         "index4.html": "htmls/index4.html",
     }
     
+    # 🌟 Selectbox 영역 🌟
     selected_name = st.selectbox(
         "표시할 HTML 페이지 선택:",
-        options=list(html_files.keys())
+        options=list(html_files.keys()),
+        # selectbox 위에 공간을 더 줄이고 싶다면 label_visibility="collapsed" 사용 가능
+        # label_visibility="collapsed" 
     )
     
     file_path_to_display = html_files[selected_name]
     html_content = read_html_file(file_path_to_display)
 
     if html_content:
-        st.subheader(f"파일: `{file_path_to_display}`")
+        # 파일 경로 정보를 st.info로 변경하여 시각적으로 덜 강조
+        st.info(f"선택된 파일: `{file_path_to_display}`")
         
-        # 🌟 height를 명시적으로 지정하지 않아야 합니다. 🌟
-        # HTML에 추가한 JavaScript가 높이를 동적으로 설정합니다.
+        # 🌟 HTML 콘텐츠 표시: 높이 설정을 제거하여 자동으로 전체를 띄움 (JavaScript 수정 필수) 🌟
         st.components.v1.html(
             html_content, 
             scrolling=True
