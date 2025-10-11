@@ -8,6 +8,17 @@ st.set_page_config(
     layout="wide",
 )
 
+# 🌟 파일별 예상 높이 사전 정의 🌟
+# (이 값을 실제 콘텐츠 길이에 맞춰 조정해야 합니다.)
+FILE_HEIGHTS = {
+    "index.html": 1000,   # 예시 높이
+    "index2.html": 800,   # 예시 높이
+    "index3.html": 1500,  # 예시 높이 (긴 콘텐츠 가정)
+    "index4.html": 1200,  # 예시 높이
+}
+# 기본값 (사전에 정의되지 않은 파일 대비)
+DEFAULT_HEIGHT = 1000
+
 def read_html_file(file_path):
     try:
         # 파일 경로 설정
@@ -44,14 +55,18 @@ if __name__ == "__main__":
     
     file_path_to_display = html_files[selected_name]
     html_content = read_html_file(file_path_to_display)
+    
+    # 🌟 선택된 파일 이름에 맞는 높이를 가져옵니다. 🌟
+    # 파일명에서 'htmls/' 경로를 제거하여 딕셔너리 키로 사용합니다.
+    file_key = selected_name 
+    current_height = FILE_HEIGHTS.get(file_key, DEFAULT_HEIGHT)
 
     if html_content:
-        st.info(f"선택된 파일: `{file_path_to_display}`")
+        st.info(f"선택된 파일: `{file_path_to_display}` (지정 높이: {current_height}px)")
         
-        # 🌟 핵심 수정: height를 5000px로 고정하여 대부분의 콘텐츠가 잘리지 않고 표시되도록 합니다.
-        # (필요에 따라 이 값을 더 늘릴 수 있습니다.)
+        # 🌟 파일별로 지정된 height를 사용합니다. 🌟
         st.components.v1.html(
             html_content, 
-            height=5000, 
+            height=current_height, 
             scrolling=True
         )
