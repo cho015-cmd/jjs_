@@ -65,4 +65,11 @@ if __name__ == "__main__":
 
     if html_content:
         st.subheader(f"선택된 파일: `{file_path_to_display}`")
-        st.components.v1.html(html_content, height=600, scrolling=True)
+        
+        # 🌟 핵심 수정: height 매개변수를 제거하거나 매우 큰 값으로 설정합니다.
+        # height를 제거하면 Streamlit이 콘텐츠 길이를 자동으로 감지하여 확장합니다.
+        st.components.v1.html(
+            html_content, 
+            # height=None,  # height를 지정하지 않거나 None으로 설정합니다.
+            scrolling=True  # Streamlit 페이지 자체의 스크롤은 허용합니다.
+        )
