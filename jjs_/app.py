@@ -3,12 +3,13 @@ import streamlit.components.v1 as components
 import os
 
 st.set_page_config(
-    page_title="HTML 탭 뷰어",
-    page_icon="📑",
+    page_title="HTML 페이지 뷰어",
+    page_icon="📄",
     layout="wide",
 )
 
-# 파일별 예상 높이 사전 정의 (이 값은 실제 콘텐츠에 맞춰 조정해야 함)
+# 파일별 예상 높이 사전 정의 (이 값을 실제 콘텐츠에 맞춰 조정해야 함)
+# 키는 파일 이름만 사용합니다. (예: index.html)
 FILE_HEIGHTS = {
     "index.html": 1000,
     "index2.html": 800,
@@ -17,12 +18,12 @@ FILE_HEIGHTS = {
 }
 DEFAULT_HEIGHT = 1000
 
-# HTML 파일 목록 및 탭 이름 설정
+# 🌟 HTML 파일 목록 및 단순 탭 이름 설정 🌟
 HTML_FILE_MAP = {
-    "개요 📊": "htmls/index.html",
-    "분석 결과 📈": "htmls/index2.html",
-    "상세 보고서 📑": "htmls/index3.html",
-    "시스템 구성 ⚙️": "htmls/index4.html",
+    "페이지 1": "htmls/index.html",
+    "페이지 2": "htmls/index2.html",
+    "페이지 3": "htmls/index3.html",
+    "페이지 4": "htmls/index4.html",
 }
 
 def read_html_file(file_path):
@@ -42,7 +43,7 @@ def read_html_file(file_path):
 
 if __name__ == "__main__":
     
-    st.markdown("## 📑 프로젝트 문서 탭 뷰어")
+    st.markdown("## 📄 HTML 콘텐츠 탭 뷰어")
     
     tab_names = list(HTML_FILE_MAP.keys())
     tabs = st.tabs(tab_names) # 탭 생성
@@ -54,7 +55,7 @@ if __name__ == "__main__":
         with tabs[i]: # 해당 탭 컨테이너 내부에 콘텐츠 작성 시작
             html_content = read_html_file(file_path_to_display)
             
-            # 파일 이름 추출 (예: '개요 📊' -> 'index.html')
+            # 파일 이름 (예: 'htmls/index.html' -> 'index.html')을 추출하여 높이 맵에서 찾습니다.
             file_base_name = os.path.basename(file_path_to_display)
             current_height = FILE_HEIGHTS.get(file_base_name, DEFAULT_HEIGHT)
 
