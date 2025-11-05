@@ -15,6 +15,7 @@ FILE_HEIGHTS = {
     "index2.html": 800,
     "index3.html": 1500,
     "index4.html": 1200,
+    "index5.html": 1000, # [추가] index5.html 높이 (기본값 1000으로 설정)
 }
 DEFAULT_HEIGHT = 1000
 
@@ -24,6 +25,7 @@ HTML_FILE_MAP = {
     "페이지 2": "htmls/index2.html",
     "페이지 3": "htmls/index3.html",
     "페이지 4": "htmls/index4.html",
+    "페이지 5": "htmls/index5.html", # [추가] 페이지 5 탭 및 파일 경로
 }
 
 def read_html_file(file_path):
