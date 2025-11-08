@@ -11,6 +11,16 @@
         body {
             font-family: 'Inter', 'Noto Sans KR', sans-serif;
             background-color: #f7f9fb; /* Light background */
+            transition: all 0.3s ease;
+        }
+        /* Make university names look clickable */
+        .clickable-uni-name {
+            cursor: pointer;
+            text-decoration: underline;
+            color: #4338ca; /* Indigo-700 */
+        }
+        .clickable-uni-name:hover {
+            color: #3730a3; /* Indigo-800 on hover */
         }
     </style>
 </head>
@@ -25,7 +35,7 @@
                 </svg>
                 SW 인재 전형 대학별 내신 참고 가이드
             </h1>
-            <p class="text-lg text-gray-600">주요 대학의 SW 특기자 전형(혹은 관련 학종)과 합격자들의 대략적인 내신 참고 범위입니다.</p>
+            <p class="text-lg text-gray-600">클릭하면 전형 특징을 자세히 볼 수 있습니다. (모든 데이터는 참고용)</p>
         </header>
 
         <!-- Warning Box -->
@@ -44,10 +54,24 @@
             </div>
         </div>
         
-        <!-- Search and Filter (Simple) -->
+        <!-- Search and Filter -->
         <div class="mb-6">
             <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="대학 이름, 전형, 등급 범위 등으로 검색..."
                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 text-gray-700">
+        </div>
+
+        <!-- Detail View Section (Hidden initially) -->
+        <div id="detailView" class="hidden mb-8 p-6 border-2 border-indigo-400 bg-indigo-50 rounded-xl shadow-inner transition-all duration-300">
+            <h2 id="detailTitle" class="text-2xl font-bold text-indigo-800 mb-3 border-b border-indigo-200 pb-2"></h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
+                <p><span class="font-medium text-indigo-700">모집 단위:</span> <span id="detailTrack" class="font-semibold text-gray-700"></span></p>
+                <p><span class="font-medium text-indigo-700">전형 유형:</span> <span id="detailExam" class="font-semibold text-gray-700"></span></p>
+                <p><span class="font-medium text-indigo-700">내신 참고 등급:</span> <span id="detailGpaRange" class="font-bold text-green-600"></span></p>
+            </div>
+            <div class="mt-4">
+                <p class="font-medium text-indigo-700 mb-2">상세 전형 특징 및 평가 요소:</p>
+                <p id="detailContent" class="text-gray-700 leading-relaxed"></p>
+            </div>
         </div>
 
         <!-- Data Table (Desktop View) -->
@@ -80,24 +104,72 @@
     </footer>
 
     <script type="text/javascript">
-        // 대학 데이터
+        // 대학 데이터 (상세 정보 필드 'details' 추가)
         const universityData = [
-            { name: "고려대학교", track: "컴퓨터학과 외", exam: "학업우수형/계열적합형(SW 우수성 어필)", gpaRange: "1.0 - 2.0 초중반", note: "SW 특기자 폐지 후 학종에서 선발. 면접/서류 비중 높음." },
-            { name: "연세대학교", track: "IT계열", exam: "특기자(과학공학) or 시스템반도체특별전형", gpaRange: "1.0 - 2.0 중반", note: "교과 성적 외 SW 역량 및 활동 중요." },
-            { name: "성균관대학교", track: "소프트웨어학과", exam: "소프트웨어 특기자", gpaRange: "1.5 - 3.0 초반", note: "SW 실적(수상, 개발 등) 제출 필수." },
-            { name: "한양대학교", track: "소프트웨어인재", exam: "소프트웨어인재", gpaRange: "1.0 - 3.0 후반", note: "내신 반영 비율 낮음. 코딩 실력/수상 실적 최우선." },
-            { name: "서강대학교", track: "인공지능학과 외", exam: "학생부종합(일반)", gpaRange: "1.5 - 2.5", note: "SW 관련 활동 우수 시 학종으로 도전 가능." },
-            { name: "경희대학교", track: "소프트웨어융합학과", exam: "네오르네상스(학종)", gpaRange: "2.0 - 4.0", note: "종합 평가, 내신 기준 폭 넓음. SW 활동 기록 강조." },
-            { name: "중앙대학교", track: "소프트웨어학부 외", exam: "다빈치형인재/탐구형인재(학종)", gpaRange: "1.0 - 3.0", note: "SW 활동 기록 및 발전 가능성 강조." },
-            { name: "동국대학교", track: "AI/SW 관련 학과", exam: "Do Dream(학종) / SW 전형", gpaRange: "2.0 - 4.0", note: "SW 전형은 실기(면접) 및 활동 보고서 비중 높음." },
-            { name: "세종대학교", track: "소프트웨어학과 외", exam: "창의인재(SW)", gpaRange: "2.5 - 4.5", note: "SW 우수성 평가가 핵심. 내신 실질 반영률 낮음." },
-            { name: "가천대학교", track: "SW 관련 학과", exam: "가천바람개비(학종) / SW 우수자", gpaRange: "3.0 - 5.0", note: "SW 우수자 전형은 코딩 테스트/면접 중심. 내신 범위가 넓음." },
-            { name: "부산대학교", track: "컴퓨터공학/정보컴퓨터공학부", exam: "학생부종합(일반)", gpaRange: "2.0 - 3.5", note: "지거국 특성상 내신과 함께 SW 관련 교과/활동 중요." },
-            { name: "경북대학교", track: "컴퓨터학부 외", exam: "학생부종합(일반)", gpaRange: "1.8 - 3.2", note: "지거국 특성상 내신과 함께 SW 관련 교과/활동 중요." },
-            { name: "국민대학교", track: "소프트웨어학부", exam: "국민프런티어/교과", gpaRange: "2.0 - 4.5", note: "SW 우수성 입증 시 내신 부담 완화." },
-            { name: "숭실대학교", track: "소프트웨어학부", exam: "SSU 미래인재/SW 특기자", gpaRange: "2.5 - 5.0", note: "SW 특기자 전형은 실기(면접) 비중이 매우 높음." },
-            { name: "아주대학교", track: "소프트웨어학과", exam: "ACE 전형(학종)", gpaRange: "2.0 - 4.0", note: "SW 우수성 및 학교 생활 충실도 평가." },
-            { name: "인하대학교", track: "컴퓨터공학과 외", exam: "인하미래인재(학종)", gpaRange: "2.0 - 4.5", note: "학생부 종합 평가. SW 동아리/활동 어필 가능." },
+            { 
+                name: "고려대학교", track: "컴퓨터학과 외", exam: "학업우수형/계열적합형(SW 우수성 어필)", gpaRange: "1.0 - 2.0 초중반", note: "SW 특기자 폐지 후 학종에서 선발. 면접/서류 비중 높음.",
+                details: "고려대는 SW 특기자 전형을 폐지하고 학종(계열적합형, 학업우수형)을 통해 선발합니다. 서류 평가 시 SW 관련 교내 활동(동아리, 세특 등)의 우수성을 적극적으로 어필해야 하며, 특히 면접에서 관련 지식과 발전 가능성을 깊이 있게 평가합니다."
+            },
+            { 
+                name: "연세대학교", track: "IT계열", exam: "특기자(과학공학) or 시스템반도체특별전형", gpaRange: "1.0 - 2.0 중반", note: "교과 성적 외 SW 역량 및 활동 중요.",
+                details: "연세대의 과학공학 특기자 전형은 수학/과학/정보 교과 성적과 함께 연구 활동, 수상 실적 등 우수한 학업 역량과 특기 역량을 요구합니다. SW 분야의 우수한 실적을 가진 학생에게 유리하며, 높은 서류 경쟁률을 보입니다."
+            },
+            { 
+                name: "성균관대학교", track: "소프트웨어학과", exam: "소프트웨어 특기자", gpaRange: "1.5 - 3.0 초반", note: "SW 실적(수상, 개발 등) 제출 필수.",
+                details: "SW 특기자 전형의 대표적인 학교로, SW 관련 실적(개발 포트폴리오, 공모전 수상 등) 제출이 필수입니다. 내신 등급보다는 실질적인 SW 역량이 합격의 핵심입니다. 1단계 서류, 2단계 면접으로 진행됩니다."
+            },
+            { 
+                name: "한양대학교", track: "소프트웨어인재", exam: "소프트웨어인재", gpaRange: "1.0 - 3.0 후반", note: "내신 반영 비율 낮음. 코딩 실력/수상 실적 최우선.",
+                details: "한양대 소프트웨어인재 전형은 교과 성적의 영향력이 매우 낮고, 오로지 SW 관련 활동의 우수성과 역량만을 평가합니다. 내신 3등급 후반대 학생도 SW 실적만으로 합격 사례가 나올 정도로 실기/실적 중심의 전형입니다."
+            },
+            { 
+                name: "서강대학교", track: "인공지능학과 외", exam: "학생부종합(일반)", gpaRange: "1.5 - 2.5", note: "SW 관련 활동 우수 시 학종으로 도전 가능.",
+                details: "서강대는 별도의 특기자 전형 없이 학생부종합(일반)을 통해 선발합니다. SW 관련 세특, 동아리 활동, 심화 학습 등의 기록이 풍부한 학생들에게 유리하며, 학업 역량과 전공 적합도를 종합적으로 평가합니다."
+            },
+            { 
+                name: "경희대학교", track: "소프트웨어융합학과", exam: "네오르네상스(학종)", gpaRange: "2.0 - 4.0", note: "종합 평가, 내신 기준 폭 넓음. SW 활동 기록 강조.",
+                details: "네오르네상스 전형은 종합적인 인재상을 추구합니다. SW 관련 교과 성취도뿐만 아니라, 자율/진로/동아리 활동에서 IT 및 SW 분야에 대한 깊이 있는 탐구 활동 기록이 중요합니다. 내신 실질 반영률은 높지 않으나 학생부 전체를 정성적으로 평가합니다."
+            },
+            { 
+                name: "중앙대학교", track: "소프트웨어학부 외", exam: "다빈치형인재/탐구형인재(학종)", gpaRange: "1.0 - 3.0", note: "SW 활동 기록 및 발전 가능성 강조.",
+                details: "중앙대는 SW 관련 학과를 학종으로 선발합니다. 탐구형 인재는 전공 분야에 대한 심화 탐구 역량을 강조하며, SW 관련 심화 학습과 프로젝트 경험이 있다면 합격 가능성이 높아집니다."
+            },
+            { 
+                name: "동국대학교", track: "AI/SW 관련 학과", exam: "Do Dream(학종) / SW 전형", gpaRange: "2.0 - 4.0", note: "SW 전형은 실기(면접) 및 활동 보고서 비중 높음.",
+                details: "동국대 SW 전형은 활동 보고서와 면접을 통해 SW 역량을 집중 평가합니다. 내신 등급이 다소 낮더라도 특출난 SW 개발 실적이나 수상 실적이 있다면 충분히 도전해 볼 만한 전형입니다."
+            },
+            { 
+                name: "세종대학교", track: "소프트웨어학과 외", exam: "창의인재(SW)", gpaRange: "2.5 - 4.5", note: "SW 우수성 평가가 핵심. 내신 실질 반영률 낮음.",
+                details: "세종대 창의인재(SW) 전형은 SW 우수성에 대한 정성적 평가가 매우 중요합니다. 코딩 실력과 프로그래밍 능력을 증명할 수 있는 포트폴리오나 활동 기록이 합격에 결정적인 영향을 미칩니다."
+            },
+            { 
+                name: "가천대학교", track: "SW 관련 학과", exam: "가천바람개비(학종) / SW 우수자", gpaRange: "3.0 - 5.0", note: "SW 우수자 전형은 코딩 테스트/면접 중심. 내신 범위가 넓음.",
+                details: "가천대 SW 우수자 전형은 코딩 실기 능력을 중시하는 전형입니다. 내신 성적의 실질 반영률은 매우 낮으며, 코딩 테스트에서 우수한 성적을 거두는 것이 가장 중요합니다. 내신 5등급 이내 학생들도 코딩 실력으로 합격할 수 있습니다."
+            },
+            { 
+                name: "부산대학교", track: "컴퓨터공학/정보컴퓨터공학부", exam: "학생부종합(일반)", gpaRange: "2.0 - 3.5", note: "지거국 특성상 내신과 함께 SW 관련 교과/활동 중요.",
+                details: "부산대는 학종을 통해 SW 관련 학과를 선발하며, 높은 교과 성적(내신)을 유지하면서 SW 관련 교과 이수 및 활동을 충실히 한 학생이 유리합니다. 지역 거점 국립대 중에서는 학업 역량과 전공 적합도를 고르게 평가합니다."
+            },
+            { 
+                name: "경북대학교", track: "컴퓨터학부 외", exam: "학생부종합(일반)", gpaRange: "1.8 - 3.2", note: "지거국 특성상 내신과 함께 SW 관련 교과/활동 중요.",
+                details: "경북대 역시 학종을 통해 선발하며, SW 관련 활동의 우수성과 함께 교과 성적 관리도 중요합니다. 면접이 있는 전형을 선택할 경우, SW 분야에 대한 본인의 역량과 비전을 명확히 보여주는 것이 필요합니다."
+            },
+            { 
+                name: "국민대학교", track: "소프트웨어학부", exam: "국민프런티어/교과", gpaRange: "2.0 - 4.5", note: "SW 우수성 입증 시 내신 부담 완화.",
+                details: "국민프런티어 전형은 SW 관련 교과 우수성 및 활동 실적을 통해 전공 적합성을 높게 평가합니다. SW 관련 교내외 활동 기록이 풍부한 경우, 내신 성적의 약점을 충분히 보완할 수 있습니다."
+            },
+            { 
+                name: "숭실대학교", track: "소프트웨어학부", exam: "SSU 미래인재/SW 특기자", gpaRange: "2.5 - 5.0", note: "SW 특기자 전형은 실기(면접) 비중이 매우 높음.",
+                details: "숭실대 SW 특기자 전형은 실기(면접) 비중이 매우 높아 SW 실력이 당락을 결정합니다. 서류와 면접을 통해 코딩 능력, 문제 해결 능력, 창의적 사고력을 종합적으로 평가합니다."
+            },
+            { 
+                name: "아주대학교", track: "소프트웨어학과", exam: "ACE 전형(학종)", gpaRange: "2.0 - 4.0", note: "SW 우수성 및 학교 생활 충실도 평가.",
+                details: "아주대 ACE 전형은 학교 생활의 성실도와 함께 SW 관련 활동의 우수성을 정성적으로 평가합니다. 교과 성적의 급격한 변화 없이 꾸준히 SW 분야에 관심을 갖고 활동한 학생에게 유리합니다."
+            },
+            { 
+                name: "인하대학교", track: "컴퓨터공학과 외", exam: "인하미래인재(학종)", gpaRange: "2.0 - 4.5", note: "학생부 종합 평가. SW 동아리/활동 어필 가능.",
+                details: "인하미래인재 전형은 SW 분야뿐만 아니라 전반적인 학업 역량과 발전 가능성을 함께 봅니다. SW 동아리 활동, 자율/진로 활동에서의 관련 탐구 내용을 잘 정리하여 어필하는 것이 중요합니다."
+            },
         ];
 
         // 테이블 및 카드 렌더링 함수
@@ -118,12 +190,14 @@
                 return;
             }
 
-            data.forEach(uni => {
+            data.forEach((uni, index) => {
                 // 1. Table Row (Desktop)
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-indigo-50 transition duration-150';
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap font-semibold">${uni.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-semibold">
+                        <span class="clickable-uni-name" onclick="showDetails(${index})">${uni.name}</span>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">${uni.track}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-indigo-700 font-medium">${uni.exam}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-green-600 font-bold">${uni.gpaRange}</td>
@@ -135,7 +209,9 @@
                 const card = document.createElement('div');
                 card.className = 'bg-white border border-indigo-200 rounded-xl shadow-md p-5';
                 card.innerHTML = `
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">${uni.name} (${uni.track})</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">
+                        <span class="clickable-uni-name" onclick="showDetails(${index})">${uni.name}</span> (${uni.track})
+                    </h3>
                     <div class="space-y-1 text-sm">
                         <p class="flex justify-between items-center"><span class="font-medium text-gray-500">전형 유형:</span> <span class="font-semibold text-indigo-700">${uni.exam}</span></p>
                         <p class="flex justify-between items-center"><span class="font-medium text-gray-500">내신 참고 등급:</span> <span class="font-bold text-green-600 text-lg">${uni.gpaRange}</span></p>
@@ -146,22 +222,99 @@
             });
         }
 
+        // 상세 정보 표시 함수
+        function showDetails(index) {
+            const uni = universityData[index];
+            const detailView = document.getElementById('detailView');
+
+            // 1. 데이터 채우기
+            document.getElementById('detailTitle').textContent = uni.name + ' 전형 상세 정보';
+            document.getElementById('detailTrack').textContent = uni.track;
+            document.getElementById('detailExam').textContent = uni.exam;
+            document.getElementById('detailGpaRange').textContent = uni.gpaRange;
+            document.getElementById('detailContent').textContent = uni.details;
+
+            // 2. 상세 정보 창 표시
+            detailView.classList.remove('hidden');
+
+            // 3. 상세 정보 창으로 스크롤 이동 (사용자 편의)
+            detailView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         // 검색 필터 함수
         function filterTable() {
             const input = document.getElementById('searchInput');
             const filter = input.value.toLowerCase();
+            
+            // 필터링된 데이터는 인덱스가 재정렬되므로, showDetails 함수가 원래 인덱스를 참조할 수 있도록 해야 합니다.
 
-            const filteredData = universityData.filter(uni => {
-                const searchString = `${uni.name} ${uni.track} ${uni.exam} ${uni.gpaRange} ${uni.note}`.toLowerCase();
-                return searchString.includes(filter);
+            const filteredDataWithIndex = universityData
+                .map((uni, originalIndex) => ({ ...uni, originalIndex }))
+                .filter(uni => {
+                    const searchString = `${uni.name} ${uni.track} ${uni.exam} ${uni.gpaRange} ${uni.note}`.toLowerCase();
+                    return searchString.includes(filter);
+                });
+
+            renderDataFiltered(filteredDataWithIndex);
+        }
+        
+        // 필터링된 데이터를 렌더링하는 함수 (originalIndex를 사용해 showDetails를 호출)
+        function renderDataFiltered(data) {
+            const tableBody = document.getElementById('universityTableBody');
+            const cardsContainer = document.getElementById('universityCards');
+            tableBody.innerHTML = '';
+            cardsContainer.innerHTML = '';
+
+            if (data.length === 0) {
+                const noResultHtml = `
+                    <tr class="hover:bg-gray-50">
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500 font-medium">검색 결과가 없습니다.</td>
+                    </tr>
+                `;
+                tableBody.innerHTML = noResultHtml;
+                cardsContainer.innerHTML = `<p class="text-center text-gray-500 font-medium p-4 border rounded-lg">검색 결과가 없습니다.</p>`;
+                return;
+            }
+
+            data.forEach(uni => {
+                const originalIndex = uni.originalIndex; // 원래 데이터 배열의 인덱스 사용
+
+                // 1. Table Row (Desktop)
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-indigo-50 transition duration-150';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap font-semibold">
+                        <span class="clickable-uni-name" onclick="showDetails(${originalIndex})">${uni.name}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${uni.track}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-indigo-700 font-medium">${uni.exam}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-green-600 font-bold">${uni.gpaRange}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${uni.note}</td>
+                `;
+                tableBody.appendChild(row);
+
+                // 2. Card (Mobile)
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-indigo-200 rounded-xl shadow-md p-5';
+                card.innerHTML = `
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">
+                        <span class="clickable-uni-name" onclick="showDetails(${originalIndex})">${uni.name}</span> (${uni.track})
+                    </h3>
+                    <div class="space-y-1 text-sm">
+                        <p class="flex justify-between items-center"><span class="font-medium text-gray-500">전형 유형:</span> <span class="font-semibold text-indigo-700">${uni.exam}</span></p>
+                        <p class="flex justify-between items-center"><span class="font-medium text-gray-500">내신 참고 등급:</span> <span class="font-bold text-green-600 text-lg">${uni.gpaRange}</span></p>
+                        <p class="pt-2 border-t border-gray-100 text-gray-600"><span class="font-medium">참고:</span> ${uni.note}</p>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
             });
-
-            renderData(filteredData);
         }
 
         // 초기 로드 시 데이터 렌더링
         window.onload = function() {
-            renderData(universityData);
+            // 초기 로드 시에는 전체 데이터를 originalIndex 포함하여 렌더링
+            const initialData = universityData.map((uni, index) => ({ ...uni, originalIndex: index }));
+            renderDataFiltered(initialData);
         };
     </script>
 </body>
